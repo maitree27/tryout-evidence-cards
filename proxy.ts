@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/signup"];
+const DEV_PUBLIC = process.env.NODE_ENV !== "production" ? ["/lab", "/api/dev/feedback"] : [];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -24,8 +25,9 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.includes(path);
+  const isDevPublic = DEV_PUBLIC.includes(path);
 
-  if (!data.user && !isPublic) {
+  if (!data.user && !isPublic && !isDevPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   if (data.user && isPublic) {
@@ -35,5 +37,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|ico|wasm|task)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|ico|wasm|task|webm|js)$).*)"],
 };

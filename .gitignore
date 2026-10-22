@@ -48,3 +48,7 @@ next-env.d.ts
 # sample footage (not committed)
 /samples/*.webm
 /samples/*.mp4
+
+# generated / local-only
+/public/mediapipe
+/public/dev-sample.webm
