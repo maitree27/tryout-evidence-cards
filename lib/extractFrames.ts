@@ -20,32 +20,61 @@ export type ExtractedClip = {
   quality: QualityReport;
 };
 
+const CANT_READ = "This browser couldn't read the clip. Try Chrome, or an .mp4 or .mov file from your phone.";
+
 function loadVideo(file: File): Promise<HTMLVideoElement> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
+    // Some browsers (Safari) only load a video that is actually on the page.
+    video.style.cssText = "position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none";
     video.muted = true;
     video.playsInline = true;
     video.preload = "auto";
+
+    // Never wait forever: if the browser can't decode this file it may send no signal at all.
+    const timer = setTimeout(() => fail(CANT_READ), 10000);
+    const fail = (message: string) => {
+      clearTimeout(timer);
+      video.remove();
+      reject(new Error(message));
+    };
+    const ready = () => {
+      if (!video.videoWidth || !video.videoHeight) return fail(CANT_READ);
+      clearTimeout(timer);
+      resolve(video);
+    };
+
     video.onloadedmetadata = () => {
-      if (isFinite(video.duration)) return resolve(video);
+      if (isFinite(video.duration)) return ready();
       // Some screen/browser recordings report an unknown length. Jumping to the
       // far end makes the browser work out the real duration.
       video.ondurationchange = () => {
         if (!isFinite(video.duration)) return;
         video.ondurationchange = null;
         video.currentTime = 0;
-        resolve(video);
+        ready();
       };
       video.currentTime = 1e101;
     };
-    video.onerror = () => reject(new Error("This video couldn't be opened. Try an .mp4 or .mov from your phone."));
+    video.onerror = () => fail("This video couldn't be opened. Try an .mp4 or .mov from your phone.");
+    document.body.appendChild(video);
     video.src = URL.createObjectURL(file);
   });
 }
 
 function seek(video: HTMLVideoElement, t: number): Promise<void> {
-  return new Promise((resolve) => {
-    video.onseeked = () => resolve();
+  return new Promise((resolve, reject) => {
+    // A seek to the spot we are already at sends no "seeked" signal, so don't wait for one.
+    if (Math.abs(video.currentTime - t) < 0.001) return resolve();
+    const timer = setTimeout(() => reject(new Error(CANT_READ)), 8000);
+    video.onseeked = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    video.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error(CANT_READ));
+    };
     video.currentTime = t;
   });
 }
@@ -117,6 +146,15 @@ function shiftBetween(a: Grey, b: Grey): [number, number] {
 
 export async function extractFrames(file: File): Promise<ExtractedClip> {
   const video = await loadVideo(file);
+  try {
+    return await readClip(video);
+  } finally {
+    URL.revokeObjectURL(video.src);
+    video.remove();
+  }
+}
+
+async function readClip(video: HTMLVideoElement): Promise<ExtractedClip> {
   const duration = video.duration;
   if (!isFinite(duration) || duration <= 0) throw new Error("Couldn't read the length of this video.");
   if (duration > MAX_CLIP_SECONDS) {
@@ -156,7 +194,6 @@ export async function extractFrames(file: File): Promise<ExtractedClip> {
       jitters.push(Math.hypot(bx - ax, by - ay));
     }
   }
-  URL.revokeObjectURL(video.src);
 
   const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
   const brightness = avg(brightnesses);
