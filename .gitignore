@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# keep the placeholder example
+!.env.example
+.data/
+.claude/settings.local.json

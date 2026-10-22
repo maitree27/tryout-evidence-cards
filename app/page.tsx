@@ -1,69 +1,213 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { parseRoster } from "@/lib/parseRoster";
+import { extractFrames, type ExtractedClip } from "@/lib/extractFrames";
+import type { EvidenceCard as Card, Player } from "@/lib/schema";
+import EvidenceCard from "@/components/EvidenceCard";
+import ComparisonTable from "@/components/ComparisonTable";
 
 export default function Home() {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [rosterError, setRosterError] = useState("");
+  const [clip, setClip] = useState<ExtractedClip | null>(null);
+  const [clipUrl, setClipUrl] = useState("");
+  const [clipError, setClipError] = useState("");
+  const [extracting, setExtracting] = useState(false);
+  const [playerIdx, setPlayerIdx] = useState("");
+  const [description, setDescription] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState("");
+  const [cards, setCards] = useState<Card[]>([]);
+  const [shareUrl, setShareUrl] = useState("");
+  const [shareError, setShareError] = useState("");
+
+  async function onRoster(file?: File) {
+    if (!file) return;
+    const result = parseRoster(file.name, await file.text());
+    setRosterError(result.error ?? "");
+    setPlayers(result.players);
+    setPlayerIdx("");
+  }
+
+  async function onClip(file?: File) {
+    if (!file) return;
+    setClip(null);
+    setClipError("");
+    setExtracting(true);
+    try {
+      setClip(await extractFrames(file));
+      setClipUrl(URL.createObjectURL(file));
+    } catch (e) {
+      setClipError(e instanceof Error ? e.message : "This video couldn't be read.");
+    } finally {
+      setExtracting(false);
+    }
+  }
+
+  const player = playerIdx === "" ? null : players[Number(playerIdx)];
+  const missing = [
+    players.length === 0 && "upload a valid roster",
+    !clip && "add a clip",
+    !player && "choose a player",
+    description.trim().length < 3 && "describe how to spot the player",
+    !consent && "confirm consent",
+  ].filter(Boolean) as string[];
+
+  async function analyze() {
+    if (!clip || !player) return;
+    setAnalyzing(true);
+    setAnalyzeError("");
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          player,
+          description,
+          consent,
+          qualityOk: clip.quality.ok,
+          frames: clip.frames.map((f) => ({ timestamp: f.timestamp, dataUrl: f.dataUrl })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      const card: Card = {
+        id: crypto.randomUUID(),
+        player,
+        description: description.trim(),
+        playerVisible: data.playerVisible,
+        footageUsable: data.footageUsable,
+        footageNote: [data.footageNote, ...clip.quality.warnings].filter(Boolean).join(" "),
+        criteria: data.criteria,
+        frames: clip.frames.map((f) => ({ timestamp: f.timestamp, dataUrl: f.thumb })),
+        createdAt: new Date().toISOString(),
+      };
+      setCards((c) => [card, ...c]);
+      setShareUrl("");
+      setPlayerIdx("");
+      setDescription("");
+    } catch (e) {
+      setAnalyzeError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  async function share() {
+    setShareError("");
+    try {
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cards }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setShareUrl(`${window.location.origin}/s/${data.id}`);
+    } catch (e) {
+      setShareError(e instanceof Error ? e.message : "Couldn't create the link.");
+    }
+  }
+
+  const box = "rounded-xl border border-gray-200 bg-white p-4 shadow-sm";
+  const err = "mt-2 rounded-lg bg-red-50 p-3 text-sm text-red-800";
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="mx-auto max-w-4xl space-y-6 p-4 sm:p-8">
+      <header>
+        <h1 className="text-2xl font-bold">Tryout evidence cards</h1>
+        <p className="text-sm text-gray-600">Upload a roster and a phone clip, then get timestamped notes for each player.</p>
+      </header>
+
+      <section className={box}>
+        <h2 className="font-semibold">1. Roster (CSV with columns: name, number)</h2>
+        <input type="file" accept=".csv,text/csv" onChange={(e) => onRoster(e.target.files?.[0])} className="mt-2 block text-sm" />
+        {rosterError && <p className={err}>{rosterError}</p>}
+        {players.length > 0 && <p className="mt-2 text-sm text-green-700">{players.length} players loaded.</p>}
+      </section>
+
+      <section className={box}>
+        <h2 className="font-semibold">2. Clip (up to 60 seconds)</h2>
+        <input type="file" accept="video/*" onChange={(e) => onClip(e.target.files?.[0])} className="mt-2 block text-sm" />
+        {extracting && <p className="mt-2 text-sm text-gray-600">Reading the clip…</p>}
+        {clipError && <p className={err}>{clipError}</p>}
+        {clip && clipUrl && (
+          <>
+            <video src={clipUrl} controls playsInline className="mt-3 max-h-64 rounded-lg" />
+            {clip.quality.warnings.length > 0 && (
+              <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                ⚠ {clip.quality.warnings.join(" ")} The result will be marked as insufficient evidence.
+              </p>
+            )}
+          </>
+        )}
+      </section>
+
+      <section className={box}>
+        <h2 className="font-semibold">3. Who is this clip about?</h2>
+        <select
+          value={playerIdx}
+          onChange={(e) => setPlayerIdx(e.target.value)}
+          disabled={players.length === 0}
+          className="mt-2 block w-full rounded border border-gray-300 p-2"
+        >
+          <option value="">Choose a player…</option>
+          {players.map((p, i) => (
+            <option key={i} value={i}>
+              #{p.number} {p.name}
+            </option>
+          ))}
+        </select>
+        <input
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="How to spot them: e.g. red bib, starts on the left wing"
+          className="mt-2 block w-full rounded border border-gray-300 p-2"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1" />
+          Consent confirmed: players/parents agreed to being filmed and to this footage being analysed and shared with selectors.
+        </label>
+        <button
+          onClick={analyze}
+          disabled={missing.length > 0 || analyzing}
+          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white disabled:bg-gray-300"
+        >
+          {analyzing ? "Analysing… (about 20 seconds)" : "Analyze clip"}
+        </button>
+        {missing.length > 0 && <p className="mt-2 text-sm text-gray-600">Still needed: {missing.join(", ")}.</p>}
+        {analyzeError && <p className={err}>{analyzeError}</p>}
+      </section>
+
+      {cards.length > 0 && (
+        <>
+          <section className={box}>
+            <h2 className="mb-2 font-semibold">Comparison</h2>
+            {cards.length < 2 && <p className="mb-2 text-sm text-gray-600">Analyse at least two players to compare them.</p>}
+            <ComparisonTable cards={cards} />
+            <button onClick={share} className="mt-4 rounded-lg bg-gray-900 px-4 py-2 font-medium text-white">
+              Create selector link
+            </button>
+            {shareError && <p className={err}>{shareError}</p>}
+            {shareUrl && (
+              <p className="mt-3 text-sm">
+                Share this link (anyone with it can view):{" "}
+                <a href={shareUrl} target="_blank" className="break-all text-blue-700 underline">
+                  {shareUrl}
+                </a>
+              </p>
+            )}
+          </section>
+          <section className="space-y-4">
+            <h2 className="font-semibold">Evidence cards</h2>
+            {cards.map((c) => (
+              <EvidenceCard key={c.id} card={c} />
+            ))}
+          </section>
+        </>
+      )}
+    </main>
   );
 }
