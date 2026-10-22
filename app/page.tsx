@@ -46,6 +46,17 @@ export default function Home() {
     }
   }
 
+  // Demo mode: lets anyone try the app without their own files.
+  async function loadDemo(clipFile: string) {
+    if (players.length === 0) {
+      const csv = await (await fetch("/demo/roster.csv")).text();
+      await onRoster(new File([csv], "roster.csv", { type: "text/csv" }));
+    }
+    const blob = await (await fetch(`/demo/${clipFile}`)).blob();
+    await onClip(new File([blob], clipFile, { type: "video/webm" }));
+    setDescription((d) => d || "the child closest to the ball");
+  }
+
   const player = playerIdx === "" ? null : players[Number(playerIdx)];
   const missing = [
     players.length === 0 && "upload a valid roster",
@@ -120,6 +131,25 @@ export default function Home() {
         <h1 className="text-2xl font-bold">Tryout evidence cards</h1>
         <p className="text-sm text-gray-600">Upload a roster and a phone clip, then get timestamped notes for each player.</p>
       </header>
+
+      <section className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm">
+        <h2 className="font-semibold">No files? Try the demo</h2>
+        <p className="mt-1 text-gray-700">
+          Loads a sample roster and a short kids&apos; football clip. Then pick a player, tick consent and press Analyze.
+          Run both clips for two different players to see the comparison table.
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button onClick={() => loadDemo("kids1.webm")} className="rounded-lg bg-blue-600 px-3 py-1.5 font-medium text-white">
+            Use demo clip 1
+          </button>
+          <button onClick={() => loadDemo("kids2.webm")} className="rounded-lg bg-blue-600 px-3 py-1.5 font-medium text-white">
+            Use demo clip 2
+          </button>
+          <a href="/demo/roster.csv" download className="text-blue-700 underline">
+            Download sample roster
+          </a>
+        </div>
+      </section>
 
       <section className={box}>
         <h2 className="font-semibold">1. Roster (CSV with columns: name, number)</h2>
@@ -208,6 +238,10 @@ export default function Home() {
           </section>
         </>
       )}
+
+      <footer className="text-xs text-gray-500">
+        Demo clips: &quot;Children&apos;s association football 01 and 02&quot; from Wikimedia Commons, licensed CC BY-SA 4.0.
+      </footer>
     </main>
   );
 }
