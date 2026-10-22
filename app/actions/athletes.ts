@@ -61,3 +61,24 @@ export async function setArchived(id: string, archived: boolean) {
   revalidatePath("/");
   revalidatePath(`/athletes/${id}`);
 }
+
+/**
+ * Permanently deletes a student: the record, all videos, scores, notes, invites and consent
+ * (database cascade), plus the stored video and keypoint files. Cannot be undone.
+ */
+export async function deleteAthlete(id: string, _: FormState, formData: FormData): Promise<FormState> {
+  if (formData.get("confirm") !== "on") return { error: "Tick the box to confirm." };
+  const supabase = await createClient();
+  const { data: videos } = await supabase.from("videos").select("storage_path").eq("athlete_id", id);
+  const paths = (videos ?? []).flatMap((v) =>
+    v.storage_path ? [v.storage_path, v.storage_path.replace(/\.[^./]+$/, ".keypoints.json")] : [],
+  );
+  if (paths.length) {
+    const { error: rmError } = await supabase.storage.from("videos").remove(paths);
+    if (rmError) return { error: `Could not remove the video files: ${rmError.message}` };
+  }
+  const { error } = await supabase.from("athletes").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/");
+  redirect("/");
+}

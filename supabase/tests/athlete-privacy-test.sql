@@ -1,5 +1,5 @@
 -- Willow privacy test for the athlete side. Paste into Supabase -> SQL Editor -> Run.
--- Needs supabase/schema.sql and supabase/athlete-side.sql applied first.
+-- Needs supabase/schema.sql, supabase/athlete-side.sql and supabase/consent.sql applied first.
 -- It makes fake users and data, checks who can see/do what, shows a PASS/FAIL table,
 -- then ROLLS BACK so nothing is left behind. Every row of the result should say PASS.
 
@@ -14,12 +14,19 @@ insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-0000000000a1', 'coach.a@test.local', '{"role":"coach","full_name":"Coach A"}'),
   ('00000000-0000-0000-0000-0000000000b1', 'coach.b@test.local', '{"role":"coach","full_name":"Coach B"}'),
   ('00000000-0000-0000-0000-0000000000c1', 'athlete@test.local', '{"role":"athlete","full_name":"Athlete One"}'),
-  ('00000000-0000-0000-0000-0000000000d1', 'outsider@test.local', '{"role":"athlete","full_name":"Outsider"}');
+  ('00000000-0000-0000-0000-0000000000d1', 'outsider@test.local', '{"role":"athlete","full_name":"Outsider"}'),
+  ('00000000-0000-0000-0000-0000000000c2', 'coach.c@test.local', '{"role":"coach","full_name":"Coach C"}'),
+  ('00000000-0000-0000-0000-0000000000e1', 'noconsent@test.local', '{"role":"athlete","full_name":"No Consent Yet"}');
 
 insert into athletes (id, coach_id, user_id, name) values
   ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000c1', 'A1 (linked to athlete)'),
   ('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-0000000000a1', null, 'A2 (same coach, other student)'),
-  ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-0000000000b1', null, 'B1 (other coach)');
+  ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-0000000000b1', null, 'B1 (other coach)'),
+  ('10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-0000000000c2', '00000000-0000-0000-0000-0000000000e1', 'A4 (athlete who has not given consent yet)');
+
+-- consent exists for the main test athlete (A1) only
+insert into consents (athlete_id, user_id, consenter_name, consenter_role, notice_version) values
+  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000c1', 'Test Parent', 'parent_guardian', 'test');
 
 insert into videos (id, athlete_id, uploaded_by, storage_path, status) values
   ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000a1', 'x/v1.mp4', 'analyzed'),
@@ -79,6 +86,13 @@ select pg_temp.count_as('athlete: sees only own videos', 1, 'select 1 from video
 select pg_temp.count_as('athlete: sees only own analyses', 1, 'select 1 from analyses');
 select pg_temp.count_as('athlete: sees only shared notes', 1, 'select 1 from coach_notes');
 select pg_temp.count_as('athlete: cannot see invites', 0, 'select 1 from invites');
+select pg_temp.count_as('athlete: can see own consent record', 1, 'select 1 from consents');
+select pg_temp.attempt('athlete: cannot edit the consent record', 'blocked',
+  $q$update consents set consenter_name = 'someone else'$q$);
+select pg_temp.attempt('athlete: cannot delete the consent record', 'blocked',
+  $q$delete from consents$q$);
+select pg_temp.attempt('athlete: cannot record consent for another student', 'blocked',
+  $q$insert into consents (athlete_id, user_id, consenter_name, consenter_role, notice_version) values ('10000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-0000000000c1','x','self_adult','t')$q$);
 select pg_temp.count_as('athlete: sees only own files in storage', 1, 'select 1 from storage.objects');
 select pg_temp.attempt('athlete: cannot upload a video to another student', 'blocked',
   $q$insert into videos (athlete_id, uploaded_by) values ('10000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-0000000000c1')$q$);
@@ -105,12 +119,24 @@ select pg_temp.attempt('athlete: cannot upload into another student folder', 'bl
 select pg_temp.attempt('athlete: cannot upload into another coach folder', 'blocked',
   $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000b1/10000000-0000-0000-0000-000000000001/t.mp4','00000000-0000-0000-0000-0000000000c1')$q$);
 
+-- ---------- ATHLETE WHO HAS NOT GIVEN CONSENT YET (A4) ----------
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000e1","role":"authenticated","email":"noconsent@test.local"}', true);
+select pg_temp.attempt('no consent yet: cannot upload a video', 'blocked',
+  $q$insert into videos (athlete_id, uploaded_by) values ('10000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-0000000000e1')$q$);
+select pg_temp.attempt('no consent yet: cannot upload a file', 'blocked',
+  $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000c2/10000000-0000-0000-0000-000000000004/t.mp4','00000000-0000-0000-0000-0000000000e1')$q$);
+select pg_temp.attempt('no consent yet: CAN record consent for own student', 'allowed',
+  $q$insert into consents (athlete_id, user_id, consenter_name, consenter_role, notice_version) values ('10000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-0000000000e1','Parent Two','parent_guardian','test')$q$);
+select pg_temp.attempt('after consent: CAN upload a video', 'allowed',
+  $q$insert into videos (athlete_id, uploaded_by) values ('10000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-0000000000e1')$q$);
+
 -- ---------- OUTSIDER (athlete account with no student record) ----------
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000d1","role":"authenticated","email":"outsider@test.local"}', true);
 select pg_temp.count_as('outsider: sees no students', 0, 'select 1 from athletes');
 select pg_temp.count_as('outsider: sees no videos', 0, 'select 1 from videos');
 select pg_temp.count_as('outsider: sees no analyses', 0, 'select 1 from analyses');
 select pg_temp.count_as('outsider: sees no notes', 0, 'select 1 from coach_notes');
+select pg_temp.count_as('outsider: sees no consent records', 0, 'select 1 from consents');
 select pg_temp.count_as('outsider: sees no files in storage', 0, 'select 1 from storage.objects');
 select pg_temp.attempt('outsider: cannot accept an invite sent to another email', 'blocked',
   $q$select accept_invite((select token from invites limit 1))$q$);
@@ -121,6 +147,7 @@ select pg_temp.count_as('coach A: sees own 2 students', 2, 'select 1 from athlet
 select pg_temp.count_as('coach A: sees own videos (2 + athlete upload)', 3, 'select 1 from videos');
 select pg_temp.count_as('coach A: sees both notes', 2, 'select 1 from coach_notes');
 select pg_temp.count_as('coach A: sees only own files (2 + athlete upload)', 3, 'select 1 from storage.objects');
+select pg_temp.count_as('coach A: can see consent for own student', 1, 'select 1 from consents');
 select pg_temp.count_as('coach A: sees own invite', 1, 'select 1 from invites');
 select pg_temp.attempt('coach A: CAN mark a video reviewed', 'allowed',
   $q$update videos set reviewed_at = now() where id = '20000000-0000-0000-0000-000000000001'$q$);
@@ -131,6 +158,7 @@ select pg_temp.count_as('coach B: sees only own student', 1, 'select 1 from athl
 select pg_temp.count_as('coach B: sees only own video', 1, 'select 1 from videos');
 select pg_temp.count_as('coach B: sees none of coach A notes', 0, 'select 1 from coach_notes');
 select pg_temp.count_as('coach B: sees no invites', 0, 'select 1 from invites');
+select pg_temp.count_as('coach B: sees no consent records', 0, 'select 1 from consents');
 select pg_temp.count_as('coach B: sees only own file in storage', 1, 'select 1 from storage.objects');
 
 -- ---------- LOGGED-OUT VISITOR ----------
@@ -141,6 +169,7 @@ select pg_temp.count_as('logged out: sees no students', 0, 'select 1 from athlet
 select pg_temp.count_as('logged out: sees no videos', 0, 'select 1 from videos');
 select pg_temp.count_as('logged out: sees no analyses', 0, 'select 1 from analyses');
 select pg_temp.count_as('logged out: sees no notes', 0, 'select 1 from coach_notes');
+select pg_temp.count_as('logged out: sees no consent records', 0, 'select 1 from consents');
 
 -- ---------- RESULT ----------
 reset role;

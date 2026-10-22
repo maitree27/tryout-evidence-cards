@@ -6,6 +6,7 @@ import { AthleteForm } from "@/components/athlete-form";
 import { Button } from "@/components/ui/button";
 import { addNote, deleteNote, setNoteVisible } from "@/app/actions/review";
 import { revokeInvite } from "@/app/actions/invites";
+import { DeleteAthlete } from "@/components/delete-athlete";
 import { CopyLink } from "@/components/copy-link";
 import { InviteAthlete } from "@/components/invite-athlete";
 import { TrendChart, type TrendRow } from "@/components/trend-chart";
@@ -32,6 +33,7 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
   }));
   const { data: notes } = await supabase
     .from("coach_notes").select("id, body, created_at, video_id, visible_to_athlete").eq("athlete_id", id).order("created_at", { ascending: false });
+  const { data: consent } = await supabase.from("consents").select("consenter_name, consenter_role, accepted_at").eq("athlete_id", id).maybeSingle();
   const { data: invites } = await supabase
     .from("invites").select("id, email, token, expires_at, accepted_at").eq("athlete_id", id).order("created_at", { ascending: false });
   const h = await headers();
@@ -126,7 +128,14 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
       <Card className="max-w-lg">
         <h2 className="mb-3 font-medium">Athlete access</h2>
         {athlete.user_id ? (
-          <p className="text-sm">✓ {athlete.name} has joined and can see their own videos and results.</p>
+          <div className="space-y-1 text-sm">
+            <p>✓ {athlete.name} has joined and can see their own videos and results.</p>
+            {consent ? (
+              <p>✓ Consent accepted by {consent.consenter_name} ({consent.consenter_role === "parent_guardian" ? "parent or guardian" : "the player, 18+"}) on {new Date(consent.accepted_at).toLocaleDateString()}.</p>
+            ) : (
+              <p className="text-warning">Waiting for consent. {athlete.name} can&apos;t use the app until a parent, guardian or adult player accepts the privacy notice.</p>
+            )}
+          </div>
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-muted">Invite {athlete.name} so they can upload their own clips and follow their progress. They can only ever see their own data.</p>
@@ -179,6 +188,10 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
       <Card className="max-w-lg">
         <h2 className="mb-3 font-medium">Student details</h2>
         <AthleteForm action={updateAthlete.bind(null, id)} initial={athlete} submitLabel="Save changes" />
+      </Card>
+      <Card className="max-w-lg border-danger">
+        <h2 className="mb-3">Delete this student</h2>
+        <DeleteAthlete athleteId={id} name={athlete.name} />
       </Card>
       <form action={setArchived.bind(null, id, !athlete.archived)}>
         <Button variant="outline" type="submit">{athlete.archived ? "Restore student" : "Archive student"}</Button>
