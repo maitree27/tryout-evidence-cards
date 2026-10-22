@@ -41,4 +41,6 @@ All thresholds are unvalidated heuristics. To calibrate: have a real cricket coa
 - [x] b. Student roster
 - [x] c. Video upload
 - [~] d. Analysis pipeline built; metric accuracy unvalidated on good footage
-- [ ] e. Per-video results (basic view exists) · f. Student dashboard · g. Overview, notes, demo data
+- [x] e. Per-video results: score breakdown, coach overrides (`score_overrides`, `analyses.coach_overall`), reviewed flag, notes - [x] f. Student dashboard (trend chart, per-skill latest/previous/best, personal best)
+- [x] g. Roster overview (needs attention / top improvers), notes, demo data (`app/actions/demo.ts`, 'Load demo data' button)
+- [ ] Not built: skeleton overlay on video (keypoints are already stored in the private bucket), athlete side
