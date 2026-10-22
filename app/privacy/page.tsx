@@ -41,7 +41,7 @@ export default function PrivacyPage() {
         <h2>Services that handle the data</h2>
         <ul className="list-disc space-y-1 pl-5 text-sm">
           <li><strong>Supabase</strong> stores accounts, videos and results.</li>
-          <li><strong>OpenAI</strong> receives only finished scores and measurements (never the video or the player's name) so it can write the feedback sentences.</li>
+          <li><strong>An AI service</strong> (Google Gemini or OpenAI, depending on how Willow is set up) receives only finished scores and measurements, never the video or the player's name, so it can write the feedback sentences.</li>
           <li><strong>Vercel</strong> runs the website.</li>
         </ul>
       </section>

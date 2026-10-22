@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { GEMINI_DEFAULT_MODEL, geminiText } from "@/lib/analysis/gemini";
 import { BATTING_METRICS } from "@/sports/cricket/batting";
 import { shotLabel } from "@/sports/cricket/shots";
 import type { AnalysisResult } from "@/sports/types";
@@ -44,22 +45,39 @@ export async function writeFeedback(
   shotType: string,
   handedness: string,
 ): Promise<{ text: string; model: string }> {
-  if (!process.env.OPENAI_API_KEY) return { text: templateFeedback(result), model: "template" };
-  const model = process.env.OPENAI_MODEL || "gpt-4o";
-  try {
-    const client = new OpenAI({ timeout: 25_000, maxRetries: 1 });
-    const res = await client.chat.completions.create({
-      model,
-      temperature: 0.4,
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: describe(result, shotType, handedness) },
-      ],
-    });
-    const text = res.choices[0]?.message?.content?.trim();
-    if (text) return { text, model };
-  } catch (e) {
-    console.error("feedback LLM failed, using template:", e instanceof Error ? e.message : e);
+  const user = describe(result, shotType, handedness);
+
+  // 1. Google Gemini, when a Gemini key is set.
+  if (process.env.GEMINI_API_KEY) {
+    const model = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
+    try {
+      const text = await geminiText({ apiKey: process.env.GEMINI_API_KEY, model, system: SYSTEM, user });
+      return { text, model };
+    } catch (e) {
+      console.error("Gemini feedback failed, trying next option:", e instanceof Error ? e.message : e);
+    }
   }
+
+  // 2. OpenAI, when an OpenAI key is set.
+  if (process.env.OPENAI_API_KEY) {
+    const model = process.env.OPENAI_MODEL || "gpt-4o";
+    try {
+      const client = new OpenAI({ timeout: 25_000, maxRetries: 1 });
+      const res = await client.chat.completions.create({
+        model,
+        temperature: 0.4,
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: user },
+        ],
+      });
+      const text = res.choices[0]?.message?.content?.trim();
+      if (text) return { text, model };
+    } catch (e) {
+      console.error("OpenAI feedback failed, using template:", e instanceof Error ? e.message : e);
+    }
+  }
+
+  // 3. Plain template: same numbers, no AI.
   return { text: templateFeedback(result), model: "template" };
 }
