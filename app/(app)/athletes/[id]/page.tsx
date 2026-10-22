@@ -38,7 +38,7 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{athlete.name}</h1>
+      <h1 className="text-4xl">{athlete.name}</h1>
       <div className="grid gap-3 sm:grid-cols-4">
         {[
           ["Latest score", summary.latest ?? "–"],
@@ -48,7 +48,7 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
         ].map(([label, value]) => (
           <Card key={label as string}>
             <div className="text-xs text-muted">{label}</div>
-            <div className="text-2xl font-semibold">{value}</div>
+            <div className="font-display text-4xl">{value}</div>
           </Card>
         ))}
       </div>

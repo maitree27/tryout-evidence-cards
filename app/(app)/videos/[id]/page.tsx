@@ -38,7 +38,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="space-y-4">
       <Link href={`/athletes/${video.athletes.id}`} className="text-sm text-primary underline">← {video.athletes.name}</Link>
-      <h1 className="text-2xl font-semibold">{shotLabel(video.shot_type)}</h1>
+      <h1 className="text-4xl">{shotLabel(video.shot_type)}</h1>
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
         <span>{video.taken_on}</span>
         <Badge>{video.status}</Badge>
@@ -56,7 +56,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
       {analysis && (
         <>
           <Card className="flex items-center gap-4">
-            <div className="text-4xl font-bold">{finalScore}</div>
+            <div className="font-display text-6xl">{finalScore}</div>
             <div className="text-sm">
               <div className="font-medium">Overall score (0-100){analysis.coach_overall !== null && " · adjusted by you"}</div>
               <div className="text-muted">

@@ -43,7 +43,7 @@ export default async function RosterPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Your students</h1>
+        <h1 className="text-4xl">Your students</h1>
         <div className="flex items-center gap-2">
           <DemoButtons hasDemo={hasDemo} />
           <Link href="/athletes/new" className="rounded-ui bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Add student</Link>
@@ -88,7 +88,7 @@ export default async function RosterPage() {
                       <Card className="hover:border-primary">
                         <div className="font-medium">{r.name}</div>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-semibold">{r.s.latest}</span>
+                          <span className="font-display text-4xl">{r.s.latest}</span>
                           <ChangeBadge change={r.s.change} />
                         </div>
                       </Card>

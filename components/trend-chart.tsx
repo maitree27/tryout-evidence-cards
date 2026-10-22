@@ -12,7 +12,7 @@ export function TrendChart({ rows, metrics }: { rows: TrendRow[]; metrics: { key
       <select
         value={key}
         onChange={(e) => setKey(e.target.value)}
-        className="rounded-ui border border-border bg-card px-2 py-1 text-sm"
+        className="rounded-ui border-2 border-border bg-card px-2 py-1 text-sm"
         aria-label="Metric to chart"
       >
         <option value="overall">Overall score</option>
@@ -21,11 +21,11 @@ export function TrendChart({ rows, metrics }: { rows: TrendRow[]; metrics: { key
       <div className="h-64 w-full">
         <ResponsiveContainer>
           <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 0, left: -16 }}>
-            <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+            <CartesianGrid stroke="#d9d4c7" strokeDasharray="3 3" />
             <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(d: string) => d.slice(5)} />
             <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
             <Tooltip />
-            <Line type="monotone" dataKey={key} stroke="var(--primary)" strokeWidth={2} dot connectNulls />
+            <Line type="monotone" dataKey={key} stroke="#2f5bff" strokeWidth={3} dot connectNulls />
           </LineChart>
         </ResponsiveContainer>
       </div>

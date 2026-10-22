@@ -41,8 +41,9 @@ All thresholds are unvalidated heuristics. To calibrate: have a real cricket coa
 
 ## Decisions
 - Athlete side (later): INVITE-ONLY. A coach invites a student; the athlete's login attaches to the existing `athletes` row via `athletes.user_id`. No independent self-sign-up. Build order: roles + RLS (+ test) -> coach invite flow -> athlete upload/analysis/feedback -> feed/streaks/personal bests -> guardian consent step for under-18s.
-- Product name: **Willow** (chosen by the founder). The app UI/metadata still says "Batting Coach" until the design direction is picked, then rename everywhere. Trademark/domain not yet checked.
-- Look and feel: not designed yet. All colours/radius are tokens in `app/globals.css`; UI primitives are in `components/ui/`. Restyle there.
+- Product name: **Willow** (chosen by the founder). Trademark/domain not yet checked.
+- Look and feel: **Kinetic** (chosen from 4 prototypes: off-white #f4f1ea, ink #0d0d0d, electric blue #2f5bff, hot orange #ff5a1f; fonts Anton / Archivo / Space Mono; sharp corners; scrolling ticker). Tokens in `app/globals.css`, primitives in `components/ui/`, ticker in `components/ticker.tsx`. Use class `font-display` for big numbers. Other directions (Aurora dark, Zinc clean, Clay warm) live on the design canvas if we revisit. Don't run `next build` while `npm run dev` is running (they share .next and the dev styles go stale).
+- Product name is now applied in the UI (Willow).
 
 ## Status
 - [x] a. Setup + auth
