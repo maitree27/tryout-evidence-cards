@@ -11,7 +11,7 @@ export type QualityReport = {
   warnings: string[];
   brightness: number; // 0 to 255
   sharpness: number; // higher is sharper
-  jitter: number; // higher is shakier
+  jitter: number; // average direction change in picture pixels (96px-wide view)
 };
 
 export type ExtractedClip = {
@@ -26,7 +26,18 @@ function loadVideo(file: File): Promise<HTMLVideoElement> {
     video.muted = true;
     video.playsInline = true;
     video.preload = "auto";
-    video.onloadedmetadata = () => resolve(video);
+    video.onloadedmetadata = () => {
+      if (isFinite(video.duration)) return resolve(video);
+      // Some screen/browser recordings report an unknown length. Jumping to the
+      // far end makes the browser work out the real duration.
+      video.ondurationchange = () => {
+        if (!isFinite(video.duration)) return;
+        video.ondurationchange = null;
+        video.currentTime = 0;
+        resolve(video);
+      };
+      video.currentTime = 1e101;
+    };
     video.onerror = () => reject(new Error("This video couldn't be opened. Try an .mp4 or .mov from your phone."));
     video.src = URL.createObjectURL(file);
   });
@@ -79,10 +90,29 @@ function sharpness({ data, w, h }: { data: Float32Array; w: number; h: number })
   return edges.reduce((a, b) => a + (b - m) * (b - m), 0) / edges.length;
 }
 
-function diff(a: Float32Array, b: Float32Array) {
-  let s = 0;
-  for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]);
-  return s / a.length;
+type Grey = { data: Float32Array; w: number; h: number };
+
+// How far did the whole picture slide between two frames? Tries every small
+// shift and keeps the one that makes the frames match best.
+function shiftBetween(a: Grey, b: Grey): [number, number] {
+  const R = 8;
+  let best = Infinity;
+  let result: [number, number] = [0, 0];
+  for (let dy = -R; dy <= R; dy++) {
+    for (let dx = -R; dx <= R; dx++) {
+      let sad = 0;
+      for (let y = R; y < a.h - R; y += 2) {
+        for (let x = R; x < a.w - R; x += 2) {
+          sad += Math.abs(a.data[y * a.w + x] - b.data[(y + dy) * b.w + (x + dx)]);
+        }
+      }
+      if (sad < best) {
+        best = sad;
+        result = [dx, dy];
+      }
+    }
+  }
+  return result;
 }
 
 export async function extractFrames(file: File): Promise<ExtractedClip> {
@@ -113,10 +143,17 @@ export async function extractFrames(file: File): Promise<ExtractedClip> {
     brightnesses.push(mean(g.data));
     sharpnesses.push(sharpness(g));
 
-    // Shakiness: compare with a moment 0.2s later. A steady camera barely changes.
+    // Shakiness: measure how the picture slides over two 0.1s steps. A steady
+    // pan keeps going the same way; shaking changes direction, so the two
+    // slides differ a lot.
     if (t + 0.2 < duration) {
+      await seek(video, t + 0.1);
+      const g2 = grey(video);
       await seek(video, t + 0.2);
-      jitters.push(diff(g.data, grey(video).data));
+      const g3 = grey(video);
+      const [ax, ay] = shiftBetween(g, g2);
+      const [bx, by] = shiftBetween(g2, g3);
+      jitters.push(Math.hypot(bx - ax, by - ay));
     }
   }
   URL.revokeObjectURL(video.src);
@@ -129,7 +166,7 @@ export async function extractFrames(file: File): Promise<ExtractedClip> {
   const warnings: string[] = [];
   if (brightness < 55) warnings.push("The footage is very dark.");
   if (sharp < 25) warnings.push("The footage looks blurry or out of focus.");
-  if (jitter > 28) warnings.push("The camera looks very shaky or is moving a lot.");
+  if (jitter > 3) warnings.push("The camera looks very shaky or is moving a lot.");
 
   return {
     duration,

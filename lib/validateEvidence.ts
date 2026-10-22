@@ -60,7 +60,7 @@ export function validateEvidence(
       // Never show a rating that has no solid evidence behind it.
       rating: insufficient ? "cant_tell" : rating,
       reason: found?.reason?.trim() || "No evidence was provided for this.",
-      observations: insufficient && !playerVisible ? [] : observations,
+      observations: !playerVisible || !footageUsable ? [] : observations,
       insufficient,
     };
   });

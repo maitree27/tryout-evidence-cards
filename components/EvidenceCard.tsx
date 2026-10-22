@@ -40,7 +40,7 @@ export default function EvidenceCard({ card }: { card: Card }) {
       )}
       {!card.footageUsable && (
         <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-          Insufficient evidence: the footage was not clear enough. {card.footageNote}
+          Insufficient evidence: this footage can&apos;t be used for a fair assessment. {card.footageNote}
         </p>
       )}
 

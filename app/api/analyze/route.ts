@@ -22,7 +22,8 @@ STRICT RULES
 4. Confidence is a number from 0 to 1. Use below 0.5 when unsure.
 5. If the evidence for a criterion is thin, set its rating to "cant_tell" and explain why. "cant_tell" is a good answer, not a failure.
 6. If the footage is too dark, blurry, shaky or distant to judge, set footage_usable to false.
-7. Be neutral and factual. Do not comment on attitude, personality or appearance.
+7. If the footage is not soccer (a match, scrimmage or soccer drill), for example a relay race or warm-up with no ball play, every criterion must be "cant_tell" and footage_usable must be false. Never give a soccer rating for non-soccer activity.
+8. Be neutral and factual. Do not comment on attitude, personality or appearance.
 Ratings: "strong", "developing", "limited", or "cant_tell".`;
 
 const SCHEMA = {
