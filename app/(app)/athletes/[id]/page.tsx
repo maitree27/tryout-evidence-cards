@@ -1,9 +1,13 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { setArchived, updateAthlete } from "@/app/actions/athletes";
 import { AthleteForm } from "@/components/athlete-form";
 import { Button } from "@/components/ui/button";
 import { addNote, deleteNote } from "@/app/actions/review";
+import { revokeInvite } from "@/app/actions/invites";
+import { CopyLink } from "@/components/copy-link";
+import { InviteAthlete } from "@/components/invite-athlete";
 import { TrendChart, type TrendRow } from "@/components/trend-chart";
 import { Textarea } from "@/components/ui/form";
 import { loadProgress } from "@/lib/data";
@@ -28,6 +32,10 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
   }));
   const { data: notes } = await supabase
     .from("coach_notes").select("id, body, created_at, video_id").eq("athlete_id", id).order("created_at", { ascending: false });
+  const { data: invites } = await supabase
+    .from("invites").select("id, email, token, expires_at, accepted_at").eq("athlete_id", id).order("created_at", { ascending: false });
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
   const latest = points[points.length - 1];
   const earlier = points[points.length - 2];
   const { data: videos } = await supabase
@@ -115,6 +123,31 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
           </ul>
         )}
       </section>
+      <Card className="max-w-lg">
+        <h2 className="mb-3 font-medium">Athlete access</h2>
+        {athlete.user_id ? (
+          <p className="text-sm">✓ {athlete.name} has joined and can see their own videos and results.</p>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-muted">Invite {athlete.name} so they can upload their own clips and follow their progress. They can only ever see their own data.</p>
+            <InviteAthlete athleteId={id} />
+            {(invites ?? []).filter((i) => !i.accepted_at).map((i) => {
+              const expired = new Date(i.expires_at) < new Date();
+              return (
+                <div key={i.id} className="space-y-2 border-t-2 border-border pt-3">
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span>{i.email} · {expired ? "expired" : `valid until ${new Date(i.expires_at).toLocaleDateString()}`}</span>
+                    <form action={revokeInvite.bind(null, i.id, id)}>
+                      <Button variant="ghost" type="submit" className="min-h-8 px-2 text-xs">Cancel</Button>
+                    </form>
+                  </div>
+                  {!expired && <CopyLink url={`${origin}/invite/${i.token}`} />}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
       <Card>
         <h2 className="mb-3 font-medium">Notes</h2>
         <form action={addNote.bind(null, id, null)} className="space-y-2">
