@@ -1,4 +1,4 @@
-# Batting Coach (cricket video analysis for coaches)
+# Willow (working title in code: Batting Coach) - cricket video analysis for coaches
 
 @AGENTS.md
 
@@ -41,6 +41,7 @@ All thresholds are unvalidated heuristics. To calibrate: have a real cricket coa
 
 ## Decisions
 - Athlete side (later): INVITE-ONLY. A coach invites a student; the athlete's login attaches to the existing `athletes` row via `athletes.user_id`. No independent self-sign-up. Build order: roles + RLS (+ test) -> coach invite flow -> athlete upload/analysis/feedback -> feed/streaks/personal bests -> guardian consent step for under-18s.
+- Product name: **Willow** (chosen by the founder). The app UI/metadata still says "Batting Coach" until the design direction is picked, then rename everywhere. Trademark/domain not yet checked.
 - Look and feel: not designed yet. All colours/radius are tokens in `app/globals.css`; UI primitives are in `components/ui/`. Restyle there.
 
 ## Status
