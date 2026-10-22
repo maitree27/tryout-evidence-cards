@@ -23,11 +23,11 @@ npm run dev
 
 Open http://localhost:3000.
 
-`.env.local` holds `OPENROUTER_API_KEY` (an OpenRouter key; the app calls a Gemini model through it). It is ignored by git and must never be committed.
+`.env.local` holds `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`, default `gpt-4o`). If it is missing, the app falls back to `OPENROUTER_API_KEY`. It is ignored by git and must never be committed.
 
 ## Deploy
 
-Deploys to Vercel. Set `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` as environment variables, and add a Vercel Blob store so share links work.
+Deploys to Vercel. Set `OPENAI_API_KEY` as an environment variable, and add a Vercel Blob store so share links work.
 
 ## Where things are
 

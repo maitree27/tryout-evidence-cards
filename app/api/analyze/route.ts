@@ -42,7 +42,10 @@ const SCHEMA = {
         required: ["id", "rating", "reason", "observations"],
         properties: {
           id: { type: "string", enum: CRITERIA.map((c) => c.id) },
-          rating: { type: "string", enum: ["strong", "developing", "limited", "cant_tell"] },
+          rating: {
+            type: "string",
+            enum: ["strong", "developing", "limited", "cant_tell"],
+          },
           reason: { type: "string" },
           observations: {
             type: "array",
@@ -64,34 +67,69 @@ const SCHEMA = {
 };
 
 export async function POST(req: Request) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  // OpenAI is used when its key is set, otherwise OpenRouter.
+  const useOpenAI = !!process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY ?? process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "The server has no API key set. Add OPENROUTER_API_KEY to .env.local." }, { status: 500 });
+    return NextResponse.json(
+      {
+        error:
+          "The server has no AI key set. Add OPENAI_API_KEY to .env.local (on Vercel: Settings, Environment Variables).",
+      },
+      { status: 500 },
+    );
   }
 
   let body: Body;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "That request was unreadable." }, { status: 400 });
+    return NextResponse.json(
+      { error: "That request was unreadable." },
+      { status: 400 },
+    );
   }
 
   // Plain-code checks first. We refuse to guess who the player is.
   const { player, description, consent, frames } = body;
   if (!player?.name || !player?.number) {
-    return NextResponse.json({ error: "Choose which player this clip is for." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Choose which player this clip is for." },
+      { status: 400 },
+    );
   }
   if (!description || description.trim().length < 3) {
-    return NextResponse.json({ error: "Describe how to spot the player (for example: red bib, starts on the left wing)." }, { status: 400 });
+    return NextResponse.json(
+      {
+        error:
+          "Describe how to spot the player (for example: red bib, starts on the left wing).",
+      },
+      { status: 400 },
+    );
   }
   if (consent !== true) {
-    return NextResponse.json({ error: "Please confirm consent before analysing." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Please confirm consent before analysing." },
+      { status: 400 },
+    );
   }
   if (!Array.isArray(frames) || frames.length < 1 || frames.length > 12) {
-    return NextResponse.json({ error: "No usable frames were received from the clip." }, { status: 400 });
+    return NextResponse.json(
+      { error: "No usable frames were received from the clip." },
+      { status: 400 },
+    );
   }
-  if (frames.some((f) => typeof f.timestamp !== "number" || !f.dataUrl?.startsWith("data:image/jpeg;base64,"))) {
-    return NextResponse.json({ error: "The frames were not in the expected format." }, { status: 400 });
+  if (
+    frames.some(
+      (f) =>
+        typeof f.timestamp !== "number" ||
+        !f.dataUrl?.startsWith("data:image/jpeg;base64,"),
+    )
+  ) {
+    return NextResponse.json(
+      { error: "The frames were not in the expected format." },
+      { status: 400 },
+    );
   }
 
   const content: unknown[] = [
@@ -111,33 +149,59 @@ export async function POST(req: Request) {
 
   let raw: RawAnalysis;
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL ?? "google/gemini-2.5-flash",
-        temperature: 0.2,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content },
-        ],
-        response_format: {
-          type: "json_schema",
-          json_schema: { name: "evidence_card", strict: true, schema: SCHEMA },
+    const res = await fetch(
+      useOpenAI
+        ? "https://api.openai.com/v1/chat/completions"
+        : "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          model: useOpenAI
+            ? (process.env.OPENAI_MODEL ?? "gpt-4o")
+            : (process.env.OPENROUTER_MODEL ?? "google/gemini-2.5-flash"),
+          ...(useOpenAI ? {} : { temperature: 0.2 }),
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "evidence_card",
+              strict: true,
+              schema: SCHEMA,
+            },
+          },
+        }),
+      },
+    );
     if (!res.ok) {
       const detail = await res.text();
-      console.error("OpenRouter error", res.status, detail.slice(0, 500));
-      return NextResponse.json({ error: `The AI service returned an error (${res.status}). Try again in a moment.` }, { status: 502 });
+      console.error(
+        useOpenAI ? "OpenAI error" : "OpenRouter error",
+        res.status,
+        detail.slice(0, 500),
+      );
+      return NextResponse.json(
+        {
+          error: `The AI service returned an error (${res.status}). Try again in a moment.`,
+        },
+        { status: 502 },
+      );
     }
     const data = await res.json();
     const text: string = data.choices?.[0]?.message?.content ?? "";
     raw = JSON.parse(text.replace(/^```json\s*|\s*```$/g, ""));
   } catch (e) {
     console.error("Analyze failed", e);
-    return NextResponse.json({ error: "The AI's answer couldn't be read. Please try again." }, { status: 502 });
+    return NextResponse.json(
+      { error: "The AI's answer couldn't be read. Please try again." },
+      { status: 502 },
+    );
   }
 
   const result = validateEvidence(
