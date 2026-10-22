@@ -5,7 +5,12 @@
 export type Landmark = [number, number, number];
 
 /** One sampled video frame. `lm` is null when no person was found. */
-export type Frame = { t: number; lm: Landmark[] | null };
+export type Frame = {
+  t: number;
+  lm: Landmark[] | null;
+  /** How far the camera had moved by this frame (fractions of the frame). Landmarks are already corrected by it; add it back to draw on the original video. */
+  cam?: [number, number];
+};
 
 export type MetricResult = {
   key: string;

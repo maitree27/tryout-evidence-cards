@@ -162,7 +162,7 @@ export async function extractPose(
     const lm: Landmark[] | null = pose
       ? pose.map((p) => [round(p.x - camX), round(p.y - camY), round(p.visibility ?? 0)] as Landmark)
       : null;
-    frames.push({ t: round(t), lm });
+    frames.push({ t: round(t), lm, cam: [round(camX), round(camY)] });
     cameraSpan = Math.max(maxX - minX, maxY - minY);
   };
 

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { addNote, deleteNote, setReviewed } from "@/app/actions/review";
 import { AnalyzeVideo } from "@/components/analyze-video";
 import { FeedbackText } from "@/components/feedback-text";
+import { SkeletonVideo } from "@/components/skeleton-video";
 import { ScoreEditor } from "@/components/score-editor";
 import { Button } from "@/components/ui/button";
 import { Badge, Card } from "@/components/ui/card";
@@ -25,6 +26,10 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
     supabase.from("score_overrides").select("metric_key, coach_score").eq("video_id", id),
     supabase.from("coach_notes").select("id, body, created_at").eq("video_id", id).order("created_at", { ascending: false }),
   ]);
+  // The saved body positions sit next to the video in the same private bucket.
+  const keypointsPath = video.storage_path?.replace(/\.[^./]+$/, ".keypoints.json");
+  const keypointsUrl =
+    analysis && keypointsPath ? (await supabase.storage.from("videos").createSignedUrl(keypointsPath, 3600)).data?.signedUrl ?? null : null;
   const metrics = (analysis?.metrics ?? []) as MetricResult[];
   const overrides = Object.fromEntries((overrideRows ?? []).map((r) => [r.metric_key, Number(r.coach_score)]));
   const warnings: string[] = analysis?.quality?.warnings ?? [];
@@ -41,9 +46,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {signed?.signedUrl ? (
-        <Card className="overflow-hidden p-0">
-          <video src={signed.signedUrl} controls playsInline className="max-h-[70vh] w-full bg-black" />
-        </Card>
+        <SkeletonVideo src={signed.signedUrl} keypointsUrl={keypointsUrl} />
       ) : (
         <Card className="text-sm text-muted">{video.storage_path ? "Couldn't load the video." : "This is a demo entry, so there is no video file."}</Card>
       )}

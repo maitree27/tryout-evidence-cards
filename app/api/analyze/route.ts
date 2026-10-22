@@ -16,6 +16,7 @@ const Body = z.object({
       z.object({
         t: z.number().min(0).max(600),
         lm: z.array(z.tuple([z.number(), z.number(), z.number()])).length(33).nullable(),
+        cam: z.tuple([z.number(), z.number()]).optional(),
       }),
     )
     .min(1)

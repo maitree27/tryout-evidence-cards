@@ -3,6 +3,7 @@
 // DEV-ONLY test page: runs the full pose + scoring pipeline on the bundled sample clip without logging in.
 import { notFound } from "next/navigation";
 import { useState } from "react";
+import { SkeletonVideo } from "@/components/skeleton-video";
 import { extractPose, probe } from "@/lib/pose/extract";
 import { analyzeBatting } from "@/sports/cricket/batting";
 
@@ -10,6 +11,7 @@ export default function Lab() {
   if (process.env.NODE_ENV === "production") notFound();
   const [log, setLog] = useState("idle");
   const [out, setOut] = useState("");
+  const [kp, setKp] = useState<string | null>(null);
 
   async function runProbe() {
     const r = await probe(location.hash === "#kids" ? "/demo/kids1.webm" : "/dev-sample.webm", [0.5, 2, 4, 6, 8]);
@@ -23,6 +25,7 @@ export default function Lab() {
       const res = analyzeBatting(ex.frames, ex.aspect, "right", "front_foot_drive", ex.cameraSpan);
       setLog(`done in ${((performance.now() - t0) / 1000).toFixed(1)}s, ${ex.frames.length} frames, ${ex.duration.toFixed(1)}s clip`);
       setOut(JSON.stringify(res, null, 1));
+      setKp(URL.createObjectURL(new Blob([JSON.stringify({ aspect: ex.aspect, frames: ex.frames })], { type: "application/json" })));
       (window as unknown as { __res: unknown }).__res = { res, frames: ex.frames };
     } catch (e) {
       setLog("ERROR " + (e instanceof Error ? e.message : String(e)));
@@ -32,6 +35,7 @@ export default function Lab() {
     <div className="p-4">
       <button id="run" onClick={run} className="rounded bg-primary px-4 py-2 text-white">Run analysis on sample</button>
       <button id="probe" onClick={runProbe} className="ml-2 rounded border px-4 py-2">Probe</button>
+      {kp && <div className="my-2 max-w-xl"><SkeletonVideo src="/dev-sample.webm" keypointsUrl={kp} /></div>}
       <p id="log" className="my-2 font-mono text-sm">{log}</p>
       <pre id="out" className="text-xs">{out}</pre>
     </div>
