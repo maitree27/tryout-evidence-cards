@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { writeFeedback } from "@/lib/analysis/feedback";
-import { createClient, getUser } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient, getRole, getUser } from "@/lib/supabase/server";
 import { analyzeBatting } from "@/sports/cricket/batting";
 
 export const maxDuration = 60;
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
   // Row-level security makes this return nothing unless the video belongs to this coach's student.
   const { data: video } = await supabase
     .from("videos")
-    .select("id, athlete_id, shot_type, athletes(batting_hand)")
+    .select("id, athlete_id, shot_type, storage_path, athletes(batting_hand)")
     .eq("id", videoId)
     .maybeSingle();
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
@@ -51,15 +52,30 @@ export async function POST(req: Request) {
 
   const feedback = await writeFeedback(result, video.shot_type, hand);
 
-  // Keypoints are kept (private bucket) so the skeleton overlay can be drawn without re-analysing.
-  await supabase.storage
-    .from("videos")
-    .upload(`${user.id}/${video.athlete_id}/${videoId}.keypoints.json`, JSON.stringify({ aspect, frames }), {
-      contentType: "application/json",
-      upsert: true,
-    });
+  // Keypoints are kept (private bucket) next to the video so the outline overlay can be drawn without re-analysing.
+  if (video.storage_path) {
+    await supabase.storage
+      .from("videos")
+      .upload(video.storage_path.replace(/\.[^./]+$/, ".keypoints.json"), JSON.stringify({ aspect, frames }), {
+        contentType: "application/json",
+        upsert: true,
+      });
+  }
 
-  const { error } = await supabase.from("analyses").upsert(
+  // Coaches save with their own session. Athletes have no write access to scores (so they can't forge them):
+  // their access to this video was just verified above, so the server saves on their behalf.
+  const role = await getRole();
+  let writer = supabase;
+  if (role === "athlete") {
+    try {
+      writer = createAdminClient() as unknown as typeof supabase;
+    } catch {
+      await supabase.from("videos").update({ status: "failed" }).eq("id", videoId);
+      return NextResponse.json({ error: "Server is not set up to save athlete results yet." }, { status: 500 });
+    }
+  }
+
+  const { error } = await writer.from("analyses").upsert(
     {
       video_id: videoId,
       config_version: result.configVersion,

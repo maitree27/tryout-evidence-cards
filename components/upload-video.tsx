@@ -8,7 +8,11 @@ import { createClient } from "@/lib/supabase/client";
 import { MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS, readDuration, uploadVideo } from "@/lib/upload";
 import { SHOT_TYPES } from "@/sports/cricket/shots";
 
-export function UploadVideo({ athleteId, coachId }: { athleteId: string; coachId: string }) {
+/**
+ * `folderOwnerId` is the coach's id (videos are stored under <coach>/<athlete>/). `uploaderId` is whoever is logged in:
+ * the coach, or the athlete themselves.
+ */
+export function UploadVideo({ athleteId, folderOwnerId, uploaderId, afterUpload = "/videos" }: { athleteId: string; folderOwnerId: string; uploaderId: string; afterUpload?: string }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string>();
@@ -32,14 +36,14 @@ export function UploadVideo({ athleteId, coachId }: { athleteId: string; coachId
 
       const videoId = crypto.randomUUID();
       const ext = (file.name.split(".").pop() || "mp4").toLowerCase().replace(/[^a-z0-9]/g, "");
-      const path = `${coachId}/${athleteId}/${videoId}.${ext}`;
+      const path = `${folderOwnerId}/${athleteId}/${videoId}.${ext}`;
       await uploadVideo(file, path, setProgress);
 
       const supabase = createClient();
       const { error: dbError } = await supabase.from("videos").insert({
         id: videoId,
         athlete_id: athleteId,
-        uploaded_by: coachId,
+        uploaded_by: uploaderId,
         storage_path: path,
         shot_type: form.get("shot_type"),
         taken_on: form.get("taken_on"),
@@ -47,7 +51,7 @@ export function UploadVideo({ athleteId, coachId }: { athleteId: string; coachId
         status: "uploaded",
       });
       if (dbError) throw new Error(dbError.message);
-      router.push(`/videos/${videoId}`);
+      router.push(`${afterUpload}/${videoId}`);
     } catch (err) {
       setProgress(null);
       setError(err instanceof Error ? err.message : "Upload failed. Check your connection and try again.");

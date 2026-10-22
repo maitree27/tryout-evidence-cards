@@ -58,3 +58,11 @@ export async function deleteNote(noteId: string, athleteId: string, videoId: str
   revalidatePath(`/athletes/${athleteId}`);
   if (videoId) revalidatePath(`/videos/${videoId}`);
 }
+
+/** Coach chooses whether the athlete can see a note (private by default). */
+export async function setNoteVisible(noteId: string, visible: boolean, athleteId: string, videoId: string | null) {
+  const supabase = await createClient();
+  await supabase.from("coach_notes").update({ visible_to_athlete: visible }).eq("id", noteId);
+  revalidatePath(`/athletes/${athleteId}`);
+  if (videoId) revalidatePath(`/videos/${videoId}`);
+}

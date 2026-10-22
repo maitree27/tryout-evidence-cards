@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { setArchived, updateAthlete } from "@/app/actions/athletes";
 import { AthleteForm } from "@/components/athlete-form";
 import { Button } from "@/components/ui/button";
-import { addNote, deleteNote } from "@/app/actions/review";
+import { addNote, deleteNote, setNoteVisible } from "@/app/actions/review";
 import { revokeInvite } from "@/app/actions/invites";
 import { CopyLink } from "@/components/copy-link";
 import { InviteAthlete } from "@/components/invite-athlete";
@@ -31,7 +31,7 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
     ...Object.fromEntries(p.metrics.map((m) => [m.key, m.score])),
   }));
   const { data: notes } = await supabase
-    .from("coach_notes").select("id, body, created_at, video_id").eq("athlete_id", id).order("created_at", { ascending: false });
+    .from("coach_notes").select("id, body, created_at, video_id, visible_to_athlete").eq("athlete_id", id).order("created_at", { ascending: false });
   const { data: invites } = await supabase
     .from("invites").select("id, email, token, expires_at, accepted_at").eq("athlete_id", id).order("created_at", { ascending: false });
   const h = await headers();
@@ -102,7 +102,7 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
       )}
       <Card className="max-w-lg">
         <h2 className="mb-3 font-medium">Upload a batting clip</h2>
-        <UploadVideo athleteId={id} coachId={user!.id} />
+        <UploadVideo athleteId={id} folderOwnerId={user!.id} uploaderId={user!.id} />
       </Card>
       <section className="space-y-2">
         <h2 className="font-medium">Videos</h2>
@@ -164,9 +164,14 @@ export default async function AthletePage({ params }: { params: Promise<{ id: st
                   {n.video_id && <> · <Link href={`/videos/${n.video_id}`} className="underline">on a video</Link></>}
                 </p>
               </div>
-              <form action={deleteNote.bind(null, n.id, id, n.video_id)}>
-                <Button variant="ghost" type="submit" className="min-h-8 px-2 text-xs">Delete</Button>
-              </form>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <form action={setNoteVisible.bind(null, n.id, !n.visible_to_athlete, id, n.video_id)}>
+                  <Button variant="outline" type="submit" className="min-h-8 px-2 text-xs">{n.visible_to_athlete ? "Shared · hide" : "Private · share"}</Button>
+                </form>
+                <form action={deleteNote.bind(null, n.id, id, n.video_id)}>
+                  <Button variant="ghost" type="submit" className="min-h-8 px-2 text-xs">Delete</Button>
+                </form>
+              </div>
             </li>
           ))}
         </ul>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addNote, deleteNote, setReviewed } from "@/app/actions/review";
+import { addNote, deleteNote, setNoteVisible, setReviewed } from "@/app/actions/review";
 import { AnalyzeVideo } from "@/components/analyze-video";
 import { FeedbackText } from "@/components/feedback-text";
 import { SkeletonVideo } from "@/components/skeleton-video";
@@ -24,7 +24,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   const [{ data: analysis }, { data: overrideRows }, { data: notes }] = await Promise.all([
     supabase.from("analyses").select("*").eq("video_id", id).maybeSingle(),
     supabase.from("score_overrides").select("metric_key, coach_score").eq("video_id", id),
-    supabase.from("coach_notes").select("id, body, created_at").eq("video_id", id).order("created_at", { ascending: false }),
+    supabase.from("coach_notes").select("id, body, created_at, visible_to_athlete").eq("video_id", id).order("created_at", { ascending: false }),
   ]);
   // The saved body positions sit next to the video in the same private bucket.
   const keypointsPath = video.storage_path?.replace(/\.[^./]+$/, ".keypoints.json");
@@ -101,9 +101,14 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
                 <p>{n.body}</p>
                 <p className="mt-1 text-xs text-muted">{new Date(n.created_at).toLocaleDateString()}</p>
               </div>
-              <form action={deleteNote.bind(null, n.id, video.athletes.id, id)}>
-                <Button variant="ghost" type="submit" className="min-h-8 px-2 text-xs">Delete</Button>
-              </form>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <form action={setNoteVisible.bind(null, n.id, !n.visible_to_athlete, video.athletes.id, id)}>
+                  <Button variant="outline" type="submit" className="min-h-8 px-2 text-xs">{n.visible_to_athlete ? "Shared · hide" : "Private · share"}</Button>
+                </form>
+                <form action={deleteNote.bind(null, n.id, video.athletes.id, id)}>
+                  <Button variant="ghost" type="submit" className="min-h-8 px-2 text-xs">Delete</Button>
+                </form>
+              </div>
             </li>
           ))}
         </ul>
