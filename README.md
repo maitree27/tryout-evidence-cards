@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tryout Evidence Cards
 
-## Getting Started
+A small web app for youth soccer coaches running tryouts. Upload a roster CSV and a short phone clip, pick the player, and get an AI-assisted evidence card with timestamped observations, confidence values and a "Can't tell" option. Process two or more players to get a comparison table and a one-page link to share with selectors.
 
-First, run the development server:
+## What it does
+
+1. Upload a roster CSV (columns: `name`, `number`).
+2. Upload a clip of 60 seconds or less. The browser pulls 8 timestamped frames from it and checks for dark, blurry or shaky footage.
+3. Pick the player, describe how to spot them (for example "red bib, left wing") and tick the consent box.
+4. The AI describes only that player in each frame and rates five criteria: first touch, ball control, passing, movement off the ball, defensive effort.
+5. Plain code then checks the AI's answer. It deletes observations with timestamps that were never sent and forces "Can't tell" when evidence is thin.
+6. Compare players in one table and create a shareable selector link.
+
+No videos? Press **Use demo clip 1 / 2** on the page.
+
+## Run it on your computer
 
 ```bash
+npm install
+cp .env.example .env.local   # then put your key in .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`.env.local` holds `OPENROUTER_API_KEY` (an OpenRouter key; the app calls a Gemini model through it). It is ignored by git and must never be committed.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy
 
-## Learn More
+Deploys to Vercel. Set `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` as environment variables, and add a Vercel Blob store so share links work.
 
-To learn more about Next.js, take a look at the following resources:
+## Where things are
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `app/page.tsx`: the main screen
+- `app/api/analyze/route.ts`: the only place the AI is called, and what it is asked
+- `lib/validateEvidence.ts`: the safety net that checks the AI's answer
+- `lib/extractFrames.ts`: frame extraction and the dark/blur/shake checks
+- `lib/parseRoster.ts`: roster CSV validation
+- `samples/`: good and bad sample rosters
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Out of scope
 
-## Deploy on Vercel
+Automatic bib or face matching, coach tap ratings, full consent management (a manual checkbox only), accounts, payments, live streams, team-camera integrations.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Credits
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Demo clips: "Children's association football 01 and 02" from Wikimedia Commons, CC BY-SA 4.0.
