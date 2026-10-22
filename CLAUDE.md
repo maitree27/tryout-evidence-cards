@@ -36,6 +36,9 @@ All thresholds are unvalidated heuristics. To calibrate: have a real cricket coa
 ## Dev-only test page
 `/lab` (and `/api/dev/feedback`) run the pose pipeline on `public/dev-sample.webm` without login; disabled in production.
 
+## Verified
+- Privacy: a second coach account saw none of the first coach's students, and pasted student/video links showed 'not found' (manual test, Oct 2026). Not yet tested: leaking via direct storage/API calls with a stolen link, minors-specific consent flows.
+
 ## Status
 - [x] a. Setup + auth
 - [x] b. Student roster
