@@ -20,7 +20,7 @@ export default function Lab() {
     try {
       const t0 = performance.now();
       const ex = await extractPose("/dev-sample.webm", (p, s) => setLog(`${s} ${p}%`));
-      const res = analyzeBatting(ex.frames, ex.aspect, "right", "forward_defence");
+      const res = analyzeBatting(ex.frames, ex.aspect, "right", "front_foot_drive", ex.cameraSpan);
       setLog(`done in ${((performance.now() - t0) / 1000).toFixed(1)}s, ${ex.frames.length} frames, ${ex.duration.toFixed(1)}s clip`);
       setOut(JSON.stringify(res, null, 1));
       (window as unknown as { __res: unknown }).__res = { res, frames: ex.frames };

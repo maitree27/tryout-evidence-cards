@@ -69,6 +69,7 @@ export function analyzeBatting(
   aspect: number,
   hand: "right" | "left",
   shotType: string,
+  cameraSpan = 0,
 ): AnalysisResult {
   const profile = shotProfile(shotType);
   const warnings: string[] = [];
@@ -84,6 +85,7 @@ export function analyzeBatting(
       frames.length, fs.length,
     );
   }
+  if (cameraSpan > 0.12) warnings.push("The camera moved a lot during this clip (panning or shaking). Positions were corrected as far as possible but scores are less reliable. Prop the phone steady and film side-on.");
   if (coverage < 0.7) warnings.push(`The batter was only detected in ${Math.round(coverage * 100)}% of frames, so some results may be unreliable.`);
 
   const raw = (f: Frame, i: number): Pt => ({ x: f.lm![i][0] * aspect, y: f.lm![i][1] });

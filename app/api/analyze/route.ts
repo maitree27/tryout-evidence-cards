@@ -10,6 +10,7 @@ export const maxDuration = 60;
 const Body = z.object({
   videoId: z.string().uuid(),
   aspect: z.number().min(0.2).max(5),
+  cameraSpan: z.number().min(0).max(10).optional(),
   frames: z
     .array(
       z.object({
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
 
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Bad request" }, { status: 400 });
-  const { videoId, aspect, frames } = parsed.data;
+  const { videoId, aspect, frames, cameraSpan } = parsed.data;
 
   const supabase = await createClient();
   // Row-level security makes this return nothing unless the video belongs to this coach's student.
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
 
   await supabase.from("videos").update({ status: "analyzing" }).eq("id", videoId);
 
-  const result = analyzeBatting(frames, aspect, hand, video.shot_type);
+  const result = analyzeBatting(frames, aspect, hand, video.shot_type, cameraSpan);
   if (result.overall === null) {
     await supabase.from("videos").update({ status: "failed" }).eq("id", videoId);
     return NextResponse.json({ ok: false, warnings: result.quality.warnings }, { status: 422 });

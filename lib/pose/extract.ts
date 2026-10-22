@@ -6,11 +6,45 @@ import type { Frame, Landmark } from "@/sports/types";
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task";
 
-export type Extracted = { frames: Frame[]; aspect: number; duration: number };
+export type Extracted = { frames: Frame[]; aspect: number; duration: number; cameraSpan: number };
 
 /** Sampling rate: 15 fps for short clips, lower for long ones so analysis stays quick on a phone. */
 function sampleFps(duration: number) {
   return duration <= 25 ? 15 : duration <= 45 ? 10 : 7;
+}
+
+const TW = 96; // thumbnail size used to track camera movement
+type Thumb = { g: Float32Array; h: number };
+
+function thumbOf(video: HTMLVideoElement, th: HTMLCanvasElement): Thumb {
+  const c = th.getContext("2d", { willReadFrequently: true })!;
+  c.drawImage(video, 0, 0, th.width, th.height);
+  const d = c.getImageData(0, 0, th.width, th.height).data;
+  const g = new Float32Array(th.width * th.height);
+  for (let i = 0; i < g.length; i++) g[i] = 0.3 * d[i * 4] + 0.59 * d[i * 4 + 1] + 0.11 * d[i * 4 + 2];
+  return { g, h: th.height };
+}
+
+/** How far the background moved between two frames (thumbnail pixels). Pixels inside `mask` (the batter) are ignored. */
+function backgroundShift(prev: Thumb, cur: Thumb, mask: (x: number, y: number) => boolean) {
+  const W = TW, H = cur.h, R = 8, RY = 5;
+  let best = { dx: 0, dy: 0, cost: Infinity };
+  for (let dy = -RY; dy <= RY; dy++) {
+    for (let dx = -R; dx <= R; dx++) {
+      let sum = 0, n = 0;
+      for (let y = RY; y < H - RY; y++) {
+        for (let x = R; x < W - R; x++) {
+          if (mask(x, y) || mask(x + dx, y + dy)) continue;
+          sum += Math.abs(cur.g[(y + dy) * W + x + dx] - prev.g[y * W + x]);
+          n++;
+        }
+      }
+      // tiny bias towards "no movement" so flat, textureless scenes don't invent a pan
+      const cost = n > 200 ? sum / n + 0.02 * (Math.abs(dx) + Math.abs(dy)) : Infinity;
+      if (cost < best.cost) best = { dx, dy, cost };
+    }
+  }
+  return best;
 }
 
 let landmarkerPromise: Promise<import("@mediapipe/tasks-vision").PoseLandmarker> | null = null;
@@ -67,6 +101,7 @@ export async function extractPose(
   const fps = sampleFps(duration);
   const count = Math.max(1, Math.floor(duration * fps));
   const frames: Frame[] = [];
+  let cameraSpan = 0;
 
   // Pose estimation doesn't need 1080p: shrink each frame to 1024px wide first (much faster on phones).
   const canvas = document.createElement("canvas");
@@ -82,6 +117,20 @@ export async function extractPose(
   const torso = (p: { x: number; y: number }[]) =>
     Math.hypot((p[11].x + p[12].x) / 2 - (p[23].x + p[24].x) / 2, (p[11].y + p[12].y) / 2 - (p[23].y + p[24].y) / 2);
 
+  // Camera movement: track how the background shifts between sampled frames and subtract the
+  // accumulated shift from every keypoint, so a panning or shaky phone doesn't look like the batter moving.
+  const thumbCanvas = document.createElement("canvas");
+  thumbCanvas.width = TW;
+  thumbCanvas.height = Math.round(TW / aspect);
+  let prevThumb: Thumb | null = null;
+  let prevBox: [number, number, number, number] | null = null;
+  let camX = 0, camY = 0, minX = 0, maxX = 0, minY = 0, maxY = 0;
+
+  const boxOf = (p: { x: number; y: number }[]): [number, number, number, number] => {
+    const xs = p.map((q) => q.x), ys = p.map((q) => q.y);
+    return [Math.min(...xs) - 0.08, Math.min(...ys) - 0.08, Math.max(...xs) + 0.08, Math.max(...ys) + 0.08];
+  };
+
   const detectAt = (t: number) => {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const poses = landmarker.detect(canvas).landmarks;
@@ -95,10 +144,26 @@ export async function extractPose(
         : poses.reduce((best, p) => (torso(p) > torso(best) ? p : best));
     }
     if (pose) last = hipMid(pose);
+
+    const thumb = thumbOf(video, thumbCanvas);
+    const box = pose ? boxOf(pose) : null;
+    if (prevThumb) {
+      const inBox = (b: typeof box, x: number, y: number) =>
+        !!b && x / TW >= b[0] && x / TW <= b[2] && y / thumb.h >= b[1] && y / thumb.h <= b[3];
+      const { dx, dy } = backgroundShift(prevThumb, thumb, (x, y) => inBox(box, x, y) || inBox(prevBox, x, y));
+      camX += dx / TW;
+      camY += dy / thumb.h;
+      minX = Math.min(minX, camX); maxX = Math.max(maxX, camX);
+      minY = Math.min(minY, camY); maxY = Math.max(maxY, camY);
+    }
+    prevThumb = thumb;
+    prevBox = box;
+
     const lm: Landmark[] | null = pose
-      ? pose.map((p) => [round(p.x), round(p.y), round(p.visibility ?? 0)] as Landmark)
+      ? pose.map((p) => [round(p.x - camX), round(p.y - camY), round(p.visibility ?? 0)] as Landmark)
       : null;
     frames.push({ t: round(t), lm });
+    cameraSpan = Math.max(maxX - minX, maxY - minY);
   };
 
   if ("requestVideoFrameCallback" in video) {
@@ -131,7 +196,7 @@ export async function extractPose(
     }
   }
   onProgress(100, "Done");
-  return { frames, aspect, duration };
+  return { frames, aspect, duration, cameraSpan };
 }
 
 /** Dev helper: timing and detection check at a few moments of a clip. */

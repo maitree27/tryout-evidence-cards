@@ -17,13 +17,13 @@ export function AnalyzeVideo({ videoId, videoUrl, hasAnalysis }: { videoId: stri
     setError(undefined);
     try {
       // 1. Body positions are read on this device. The video itself isn't re-uploaded.
-      const { frames, aspect } = await extractPose(videoUrl, (p, s) => { setPct(p); setStage(s); });
+      const { frames, aspect, cameraSpan } = await extractPose(videoUrl, (p, s) => { setPct(p); setStage(s); });
       // 2. The server scores them and writes the feedback.
       setStage("Scoring and writing feedback");
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ videoId, aspect, frames }),
+        body: JSON.stringify({ videoId, aspect, frames, cameraSpan }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
