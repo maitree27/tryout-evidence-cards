@@ -23,7 +23,7 @@ npm run dev
 
 Open http://localhost:3000.
 
-`.env.local` holds `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`, default `gpt-4o`). If it is missing, the app falls back to `OPENROUTER_API_KEY`. It is ignored by git and must never be committed.
+`.env.local` holds `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`, default `gpt-4o`). It is ignored by git and must never be committed.
 
 ## Deploy
 

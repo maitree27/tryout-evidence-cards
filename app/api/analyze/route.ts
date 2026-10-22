@@ -67,9 +67,7 @@ const SCHEMA = {
 };
 
 export async function POST(req: Request) {
-  // OpenAI is used when its key is set, otherwise OpenRouter.
-  const useOpenAI = !!process.env.OPENAI_API_KEY;
-  const apiKey = process.env.OPENAI_API_KEY ?? process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       {
@@ -149,43 +147,31 @@ export async function POST(req: Request) {
 
   let raw: RawAnalysis;
   try {
-    const res = await fetch(
-      useOpenAI
-        ? "https://api.openai.com/v1/chat/completions"
-        : "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: useOpenAI
-            ? (process.env.OPENAI_MODEL ?? "gpt-4o")
-            : (process.env.OPENROUTER_MODEL ?? "google/gemini-2.5-flash"),
-          ...(useOpenAI ? {} : { temperature: 0.2 }),
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content },
-          ],
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: "evidence_card",
-              strict: true,
-              schema: SCHEMA,
-            },
-          },
-        }),
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL ?? "gpt-4o",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "evidence_card",
+            strict: true,
+            schema: SCHEMA,
+          },
+        },
+      }),
+    });
     if (!res.ok) {
       const detail = await res.text();
-      console.error(
-        useOpenAI ? "OpenAI error" : "OpenRouter error",
-        res.status,
-        detail.slice(0, 500),
-      );
+      console.error("OpenAI error", res.status, detail.slice(0, 500));
       return NextResponse.json(
         {
           error: `The AI service returned an error (${res.status}). Try again in a moment.`,
