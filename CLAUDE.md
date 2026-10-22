@@ -46,7 +46,7 @@ All thresholds are unvalidated heuristics. To calibrate: have a real cricket coa
 - Product name is now applied in the UI (Willow).
 
 ## Live site
-Deployed 2026-10-22 to https://hackathon-byob3.vercel.app (Vercel project `hackathon`, auto-deploys on push to `main` of github.com/maitree27/tryout-evidence-cards). Replaced the old soccer app (tag `soccer-app-v1`; Vercel Instant Rollback also restores it). Env vars set in Vercel: OPENAI_API_KEY, OPENAI_MODEL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY. NOT set yet: SUPABASE_SERVICE_ROLE_KEY (athlete self-analysis fails until added). Live site and local dev share the SAME Supabase project/data. TODO: run supabase/consent.sql, rotate the OpenAI key (it appeared in screenshots), add real email sending before turning email confirmation on.
+Deployed 2026-10-22 to https://hackathon-byob3.vercel.app (Vercel project `hackathon`, auto-deploys on push to `main` of github.com/maitree27/tryout-evidence-cards). Replaced the old soccer app (tag `soccer-app-v1`; Vercel Instant Rollback also restores it). Env vars set in Vercel: OPENAI_API_KEY, OPENAI_MODEL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY. NOT set yet: SUPABASE_SERVICE_ROLE_KEY (athlete self-analysis fails until added). Live site and local dev share the SAME Supabase project/data. DONE 2026-10-23: server key accepted (health check), athlete-side.sql + consent.sql applied to the REAL project (earlier runs had gone to a different project/account; the project lives under Supabase org 'test'). TODO: re-run the privacy test on the real project, rotate the OpenAI key (it appeared in screenshots), add real email sending before turning email confirmation on.
 
 ## Status
 - [x] a. Setup + auth
