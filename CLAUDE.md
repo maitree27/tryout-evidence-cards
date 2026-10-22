@@ -45,6 +45,9 @@ All thresholds are unvalidated heuristics. To calibrate: have a real cricket coa
 - Look and feel: **Kinetic** (chosen from 4 prototypes: off-white #f4f1ea, ink #0d0d0d, electric blue #2f5bff, hot orange #ff5a1f; fonts Anton / Archivo / Space Mono; sharp corners; scrolling ticker). Tokens in `app/globals.css`, primitives in `components/ui/`, ticker in `components/ticker.tsx`. Use class `font-display` for big numbers. Other directions (Aurora dark, Zinc clean, Clay warm) live on the design canvas if we revisit. Don't run `next build` while `npm run dev` is running (they share .next and the dev styles go stale).
 - Product name is now applied in the UI (Willow).
 
+## Live site
+Deployed 2026-10-22 to https://hackathon-byob3.vercel.app (Vercel project `hackathon`, auto-deploys on push to `main` of github.com/maitree27/tryout-evidence-cards). Replaced the old soccer app (tag `soccer-app-v1`; Vercel Instant Rollback also restores it). Env vars set in Vercel: OPENAI_API_KEY, OPENAI_MODEL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY. NOT set yet: SUPABASE_SERVICE_ROLE_KEY (athlete self-analysis fails until added). Live site and local dev share the SAME Supabase project/data. TODO: run supabase/consent.sql, rotate the OpenAI key (it appeared in screenshots), add real email sending before turning email confirmation on.
+
 ## Status
 - [x] a. Setup + auth
 - [x] b. Student roster
