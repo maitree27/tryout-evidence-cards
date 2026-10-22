@@ -43,6 +43,9 @@ export default async function AthleteHome() {
           </Card>
         ))}
       </div>
+      <Link href="/me/progress" className="mr-2 inline-flex min-h-11 items-center border-2 border-border px-5 font-mono text-xs font-bold uppercase tracking-wider hover:bg-foreground hover:text-background">
+        See my progress
+      </Link>
       <Link href="/me/upload" className="inline-flex min-h-11 items-center bg-accent px-5 font-mono text-xs font-bold uppercase tracking-wider text-foreground hover:bg-foreground hover:text-background">
         + Upload a clip
       </Link>

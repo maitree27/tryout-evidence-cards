@@ -15,6 +15,7 @@ export default async function AthleteLayout({ children }: { children: React.Reac
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-3">
           <Link href="/me" className="font-display text-3xl tracking-wide">WILLOW</Link>
           <nav className="flex items-center gap-1">
+            <Link href="/me/progress" className="px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider hover:bg-white/15">Progress</Link>
             <Link href="/me/upload" className="px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider hover:bg-white/15">Upload</Link>
             <form action={logout}>
               <Button variant="ghost" type="submit" className="hover:bg-white/15">Log out</Button>
