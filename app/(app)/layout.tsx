@@ -2,11 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
-import { getUser } from "@/lib/supabase/server";
+import { getRole, getUser } from "@/lib/supabase/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
   if (!user) redirect("/login");
+  // Coach screens are for coaches only; athletes have their own area.
+  if ((await getRole()) === "athlete") redirect("/me");
   return (
     <div className="min-h-screen">
       <header className="bg-foreground text-background">

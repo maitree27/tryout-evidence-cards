@@ -27,3 +27,12 @@ export async function getUser() {
   const { data } = await supabase.auth.getUser();
   return data.user;
 }
+
+/** "coach" or "athlete" for the signed-in user (null when signed out). Roles are set at sign-up and cannot be edited by the user. */
+export async function getRole(): Promise<"coach" | "athlete" | null> {
+  const user = await getUser();
+  if (!user) return null;
+  const supabase = await createClient();
+  const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  return (data?.role as "coach" | "athlete" | undefined) ?? null;
+}
