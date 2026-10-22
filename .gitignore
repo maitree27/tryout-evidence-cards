@@ -44,3 +44,7 @@ next-env.d.ts
 !.env.example
 .data/
 .claude/settings.local.json
+
+# sample footage (not committed)
+/samples/*.webm
+/samples/*.mp4
