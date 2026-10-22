@@ -44,4 +44,4 @@ What was built and how it was checked, against the three MVP tests. Everything b
 
 ## History
 
-See `git log` for the order things were built and fixed.
+See [docs/PROOF_OF_PROGRESS.md](docs/PROOF_OF_PROGRESS.md) for a screenshot walkthrough of the app, and `git log` for the order things were built and fixed.
