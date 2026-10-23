@@ -12,7 +12,7 @@ import { SHOT_TYPES } from "@/sports/cricket/shots";
  * `folderOwnerId` is the coach's id (videos are stored under <coach>/<athlete>/). `uploaderId` is whoever is logged in:
  * the coach, or the athlete themselves.
  */
-export function UploadVideo({ athleteId, folderOwnerId, uploaderId, afterUpload = "/videos" }: { athleteId: string; folderOwnerId: string; uploaderId: string; afterUpload?: string }) {
+export function UploadVideo({ athleteId, folderOwnerId, uploaderId, afterUpload = "/videos", dailyLimit }: { athleteId: string; folderOwnerId: string; uploaderId: string; afterUpload?: string; dailyLimit?: number }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string>();
@@ -30,6 +30,11 @@ export function UploadVideo({ athleteId, folderOwnerId, uploaderId, afterUpload 
       );
     try {
       setProgress(0);
+      if (dailyLimit) {
+        const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+        const { count } = await createClient().from("videos").select("id", { count: "exact", head: true }).eq("athlete_id", athleteId).gte("created_at", since);
+        if ((count ?? 0) >= dailyLimit) throw new Error(`You've reached today's limit of ${dailyLimit} clips. Please try again tomorrow.`);
+      }
       const duration = await readDuration(file);
       if (duration > MAX_VIDEO_SECONDS)
         throw new Error(`That clip is ${Math.round(duration)}s. Keep it under ${MAX_VIDEO_SECONDS}s (one shot or a short drill).`);
@@ -50,7 +55,13 @@ export function UploadVideo({ athleteId, folderOwnerId, uploaderId, afterUpload 
         duration_s: duration,
         status: "uploaded",
       });
-      if (dbError) throw new Error(dbError.message);
+      if (dbError) {
+        throw new Error(
+          dbError.message.includes("row-level security")
+            ? "Couldn't save this clip. You may have reached today's upload limit, or your consent is missing."
+            : dbError.message,
+        );
+      }
       router.push(`${afterUpload}/${videoId}`);
     } catch (err) {
       setProgress(null);

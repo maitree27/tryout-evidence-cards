@@ -12,7 +12,7 @@ export default async function AthleteUpload() {
     <>
       <h1 className="text-4xl">Upload a clip</h1>
       <Card>
-        <UploadVideo athleteId={athlete.id} folderOwnerId={athlete.coach_id} uploaderId={user.id} afterUpload="/me/videos" />
+        <UploadVideo athleteId={athlete.id} folderOwnerId={athlete.coach_id ?? user.id} uploaderId={user.id} afterUpload="/me/videos" dailyLimit={athlete.coach_id ? undefined : 5} />
       </Card>
     </>
   );

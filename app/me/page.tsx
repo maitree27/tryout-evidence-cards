@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeleteMyData } from "@/components/delete-my-data";
 import { Badge, Card } from "@/components/ui/card";
 import { loadProgress } from "@/lib/data";
 import { summarize } from "@/lib/progress";
@@ -8,7 +9,7 @@ import { shotLabel } from "@/sports/cricket/shots";
 // Athlete home. Row-level security returns only this athlete's own record, videos and results.
 export default async function AthleteHome() {
   const supabase = await createClient();
-  const { data: athlete } = await supabase.from("athletes").select("id, name").maybeSingle();
+  const { data: athlete } = await supabase.from("athletes").select("id, name, coach_id").maybeSingle();
 
   if (!athlete) {
     return (
@@ -72,6 +73,13 @@ export default async function AthleteHome() {
           </ul>
         )}
       </section>
+
+      {!athlete.coach_id && (
+        <Card className="max-w-lg border-danger">
+          <h2 className="mb-3">Delete my data</h2>
+          <DeleteMyData />
+        </Card>
+      )}
     </>
   );
 }

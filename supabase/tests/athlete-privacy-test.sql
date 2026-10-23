@@ -1,5 +1,5 @@
 -- Willow privacy test for the athlete side. Paste into Supabase -> SQL Editor -> Run.
--- Needs supabase/schema.sql, supabase/athlete-side.sql and supabase/consent.sql applied first.
+-- Needs supabase/schema.sql, athlete-side.sql, consent.sql and self-signup.sql applied first.
 -- It makes fake users and data, checks who can see/do what, shows a PASS/FAIL table,
 -- then ROLLS BACK so nothing is left behind. Every row of the result should say PASS.
 
@@ -16,7 +16,8 @@ insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-0000000000c1', 'athlete@test.local', '{"role":"athlete","full_name":"Athlete One"}'),
   ('00000000-0000-0000-0000-0000000000d1', 'outsider@test.local', '{"role":"athlete","full_name":"Outsider"}'),
   ('00000000-0000-0000-0000-0000000000c2', 'coach.c@test.local', '{"role":"coach","full_name":"Coach C"}'),
-  ('00000000-0000-0000-0000-0000000000e1', 'noconsent@test.local', '{"role":"athlete","full_name":"No Consent Yet"}');
+  ('00000000-0000-0000-0000-0000000000e1', 'noconsent@test.local', '{"role":"athlete","full_name":"No Consent Yet"}'),
+  ('00000000-0000-0000-0000-0000000000f1', 'solo@test.local', '{"role":"athlete","full_name":"Solo Student"}');
 
 insert into athletes (id, coach_id, user_id, name) values
   ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000c1', 'A1 (linked to athlete)'),
@@ -116,8 +117,52 @@ select pg_temp.attempt('athlete: CAN upload file into own folder', 'allowed',
   $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000a1/10000000-0000-0000-0000-000000000001/t.mp4','00000000-0000-0000-0000-0000000000c1')$q$);
 select pg_temp.attempt('athlete: cannot upload into another student folder', 'blocked',
   $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000a1/10000000-0000-0000-0000-000000000002/t.mp4','00000000-0000-0000-0000-0000000000c1')$q$);
+select pg_temp.attempt('athlete with a coach: cannot delete files', 'blocked',
+  $q$delete from storage.objects where name = '00000000-0000-0000-0000-0000000000a1/10000000-0000-0000-0000-000000000001/own.mp4'$q$);
 select pg_temp.attempt('athlete: cannot upload into another coach folder', 'blocked',
   $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000b1/10000000-0000-0000-0000-000000000001/t.mp4','00000000-0000-0000-0000-0000000000c1')$q$);
+
+-- ---------- INDEPENDENT STUDENT (signed up alone, no coach) ----------
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000f1","role":"authenticated","email":"solo@test.local"}', true);
+select pg_temp.attempt('solo: cannot create a record with a coach attached', 'blocked',
+  $q$insert into athletes (id, coach_id, user_id, name, is_minor, date_of_birth) values ('10000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-0000000000a1','00000000-0000-0000-0000-0000000000f1','x',false,'1990-01-01')$q$);
+select pg_temp.attempt('solo: cannot create a record if under 18', 'blocked',
+  $q$insert into athletes (id, coach_id, user_id, name, is_minor, date_of_birth) values ('10000000-0000-0000-0000-000000000005',null,'00000000-0000-0000-0000-0000000000f1','x',false,(current_date - interval '10 years')::date)$q$);
+select pg_temp.attempt('solo: cannot create a record without a birth date', 'blocked',
+  $q$insert into athletes (id, coach_id, user_id, name, is_minor) values ('10000000-0000-0000-0000-000000000005',null,'00000000-0000-0000-0000-0000000000f1','x',false)$q$);
+select pg_temp.attempt('solo: CAN create own record (18+)', 'allowed',
+  $q$insert into athletes (id, coach_id, user_id, name, is_minor, date_of_birth) values ('10000000-0000-0000-0000-000000000005',null,'00000000-0000-0000-0000-0000000000f1','Solo Student',false,'1990-01-01')$q$);
+select pg_temp.attempt('solo: cannot create a second record', 'blocked',
+  $q$insert into athletes (id, coach_id, user_id, name, is_minor, date_of_birth) values ('10000000-0000-0000-0000-000000000006',null,'00000000-0000-0000-0000-0000000000f1','Again',false,'1990-01-01')$q$);
+select pg_temp.attempt('solo: cannot attach own record to a coach', 'blocked',
+  $q$update athletes set coach_id = '00000000-0000-0000-0000-0000000000a1' where id = '10000000-0000-0000-0000-000000000005'$q$);
+select pg_temp.attempt('solo: cannot change birth date to under 18', 'blocked',
+  $q$update athletes set date_of_birth = (current_date - interval '10 years')::date where id = '10000000-0000-0000-0000-000000000005'$q$);
+select pg_temp.attempt('solo: cannot upload a video before consent', 'blocked',
+  $q$insert into videos (athlete_id, uploaded_by) values ('10000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-0000000000f1')$q$);
+select pg_temp.attempt('solo: cannot upload a file before consent', 'blocked',
+  $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000f1/10000000-0000-0000-0000-000000000005/early.mp4','00000000-0000-0000-0000-0000000000f1')$q$);
+select pg_temp.attempt('solo: CAN record own consent', 'allowed',
+  $q$insert into consents (athlete_id, user_id, consenter_name, consenter_role, notice_version) values ('10000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-0000000000f1','Solo Student','self_adult','test')$q$);
+select pg_temp.attempt('solo: CAN upload clip 1', 'allowed', $q$insert into videos (athlete_id, uploaded_by) values ('10000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-0000000000f1')$q$);
+select pg_temp.attempt('solo: CAN upload clip 2', 'allowed', $q$insert into videos (athlete_id, uploaded_by) values ('10000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-0000000000f1')$q$);
+select pg_temp.attempt('solo: CAN upload clip 3', 'allowed', $q$insert into videos (athlete_id, uploaded_by) values ('10000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-0000000000f1')$q$);
+select pg_temp.attempt('solo: CAN upload clip 4', 'allowed', $q$insert into videos (athlete_id, uploaded_by) values ('10000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-0000000000f1')$q$);
+select pg_temp.attempt('solo: CAN upload clip 5', 'allowed', $q$insert into videos (athlete_id, uploaded_by) values ('10000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-0000000000f1')$q$);
+select pg_temp.attempt('solo: 6th clip in a day is blocked', 'blocked', $q$insert into videos (athlete_id, uploaded_by) values ('10000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-0000000000f1')$q$);
+select pg_temp.attempt('solo: CAN upload a file into own folder', 'allowed',
+  $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000f1/10000000-0000-0000-0000-000000000005/t.mp4','00000000-0000-0000-0000-0000000000f1')$q$);
+select pg_temp.attempt('solo: cannot upload into a coach folder', 'blocked',
+  $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000a1/10000000-0000-0000-0000-000000000005/t.mp4','00000000-0000-0000-0000-0000000000f1')$q$);
+select pg_temp.count_as('solo: sees only own student record', 1, 'select 1 from athletes');
+select pg_temp.count_as('solo: sees only own 5 clips', 5, 'select 1 from videos');
+select pg_temp.count_as('solo: sees only own file in storage', 1, 'select 1 from storage.objects');
+select pg_temp.attempt('solo: cannot accept a coach invite (already has a record)', 'blocked',
+  $q$select accept_invite((select token from invites limit 1))$q$);
+select pg_temp.attempt('solo: CAN delete own file', 'allowed',
+  $q$delete from storage.objects where name = '00000000-0000-0000-0000-0000000000f1/10000000-0000-0000-0000-000000000005/t.mp4'$q$);
+select pg_temp.attempt('solo: CAN delete own record', 'allowed',
+  $q$delete from athletes where id = '10000000-0000-0000-0000-000000000005'$q$);
 
 -- ---------- ATHLETE WHO HAS NOT GIVEN CONSENT YET (A4) ----------
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000e1","role":"authenticated","email":"noconsent@test.local"}', true);
@@ -159,6 +204,8 @@ select pg_temp.count_as('coach B: sees only own video', 1, 'select 1 from videos
 select pg_temp.count_as('coach B: sees none of coach A notes', 0, 'select 1 from coach_notes');
 select pg_temp.count_as('coach B: sees no invites', 0, 'select 1 from invites');
 select pg_temp.count_as('coach B: sees no consent records', 0, 'select 1 from consents');
+select pg_temp.attempt('coach B: cannot create an independent student record', 'blocked',
+  $q$insert into athletes (id, coach_id, user_id, name, is_minor, date_of_birth) values ('10000000-0000-0000-0000-000000000007',null,'00000000-0000-0000-0000-0000000000b1','x',false,'1990-01-01')$q$);
 select pg_temp.count_as('coach B: sees only own file in storage', 1, 'select 1 from storage.objects');
 
 -- ---------- LOGGED-OUT VISITOR ----------

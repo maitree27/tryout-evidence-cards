@@ -5,6 +5,8 @@ Target: the existing Vercel project `hackathon` (https://hackathon-byob3.vercel.
 ## Before you start
 - [ ] `git tag soccer-app-v1 fd19a41` (keeps the old app recoverable; `fd19a41` is its last commit)
 - [ ] `npm run build` passes locally (stop `npm run dev` first; they share `.next`). Passed on 2026-10-22.
+- [ ] `supabase/self-signup.sql` run (student self sign-up, 18+), then the privacy test (81 checks) all PASS
+- [ ] Email confirmation turned ON + real email sending set up (self sign-up is open to anyone)
 - [ ] `supabase/consent.sql` run, and the privacy test (55 checks) all PASS
 - [ ] Privacy notice reviewed by a lawyer for your country (draft at /privacy)
 - [ ] Athlete analysis tested locally with `SUPABASE_SERVICE_ROLE_KEY` saved (not yet).

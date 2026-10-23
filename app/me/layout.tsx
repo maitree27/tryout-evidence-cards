@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { ConsentForm } from "@/components/consent-form";
+import { StudentSignupForm } from "@/components/student-signup-form";
 import { Card } from "@/components/ui/card";
 import { createClient, getRole, getUser } from "@/lib/supabase/server";
 
@@ -17,6 +18,7 @@ export default async function AthleteLayout({ children }: { children: React.Reac
   const { data: athlete } = await supabase.from("athletes").select("id, name, is_minor").maybeSingle();
   const { data: consent } = athlete ? await supabase.from("consents").select("id").eq("athlete_id", athlete.id).maybeSingle() : { data: null };
   const needsConsent = !!athlete && !consent;
+  const needsSetup = !athlete; // signed up but no student profile yet
 
   return (
     <div className="min-h-screen">
@@ -24,7 +26,7 @@ export default async function AthleteLayout({ children }: { children: React.Reac
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-3">
           <Link href="/me" className="font-display text-3xl tracking-wide">WILLOW</Link>
           <nav className="flex items-center gap-1">
-            {!needsConsent && <>
+            {!needsConsent && !needsSetup && <>
             <Link href="/me/progress" className="px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider hover:bg-white/15">Progress</Link>
             <Link href="/me/upload" className="px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider hover:bg-white/15">Upload</Link></>}
             <form action={logout}>
@@ -33,7 +35,15 @@ export default async function AthleteLayout({ children }: { children: React.Reac
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">{needsConsent && athlete ? (
+      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">{needsSetup ? (
+          <>
+            <h1 className="text-4xl">Set up your profile</h1>
+            <p className="text-sm text-muted">
+              A few details to finish your account. If your coach sent you an invite link, open that link instead.
+            </p>
+            <Card><StudentSignupForm mode="complete" /></Card>
+          </>
+        ) : needsConsent && athlete ? (
           <>
             <h1 className="text-4xl">One quick step</h1>
             <p className="text-sm text-muted">

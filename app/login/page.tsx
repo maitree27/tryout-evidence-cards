@@ -20,7 +20,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       </Card>
       {student ? (
         <p className="text-sm text-muted">
-          First time here? Students join with the invite link their coach sent them, so there is no sign-up on this page.{" "}
+          New here? Open the invite link your coach sent you, or{" "}
+          <Link href="/signup/student" className="text-primary underline">create an account</Link> (18+) if you don&apos;t have a coach.{" "}
           <Link href="/login" className="text-primary underline">I&apos;m a coach</Link>
         </p>
       ) : (

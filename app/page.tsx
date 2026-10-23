@@ -46,12 +46,13 @@ export default async function Landing() {
           <div>
             <p className="font-mono text-xs font-bold uppercase tracking-widest text-primary">For players</p>
             <h2 className="mt-2" style={{ fontFamily: "var(--font-anton), Impact, sans-serif", fontSize: "2.5rem", lineHeight: 1, letterSpacing: "normal", textTransform: "none", fontWeight: 400 }}>I&apos;m a student</h2>
-            <p className="mt-2 text-sm">See your scores and feedback, track your streak and personal bests. Students join by invitation from their coach, then log in here any time to check their own stats.</p>
+            <p className="mt-2 text-sm">See your scores and feedback, track your streak and personal bests. Got an invite from your coach? Open it to join. No coach? Create your own account (18+) for personal use.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link href="/login?as=student" className="inline-flex min-h-11 items-center bg-accent px-5 font-mono text-xs font-bold uppercase tracking-wider text-foreground hover:bg-foreground hover:text-background">Student log in</Link>
+            <Link href="/signup/student" className="inline-flex min-h-11 items-center border-2 border-border px-5 font-mono text-xs font-bold uppercase tracking-wider hover:bg-foreground hover:text-background">Create account</Link>
           </div>
-          <p className="text-xs text-muted">First time? Open the invite link your coach sent you. Already joined? Just log in.</p>
+          <p className="text-xs text-muted">Have a coach? Use the invite link they sent you. No invite? Create an account (18+). Already joined? Just log in.</p>
         </div>
       </section>
     </main>

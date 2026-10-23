@@ -24,7 +24,7 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
-  const isAuthPage = PUBLIC_PATHS.includes(path);
+  const isAuthPage = PUBLIC_PATHS.includes(path) || path.startsWith("/signup");
   const isPublic = isAuthPage || path === "/" || path.startsWith("/invite/") || path === "/privacy" || path === "/api/health";
   const isDevPublic = DEV_PUBLIC.includes(path);
 

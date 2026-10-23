@@ -48,12 +48,17 @@ export default function PrivacyPage() {
 
       <section className="space-y-2">
         <h2>Children</h2>
-        <p className="text-sm">Players under 18 can only use Willow after a parent or guardian accepts this notice for them. Players join only by invitation from their coach. A parent or guardian can ask the coach at any time to see or delete the player's data.</p>
+        <p className="text-sm">Players under 18 can only use Willow through a coach, and only after a parent or guardian accepts this notice for them. Players under 18 cannot create an account on their own. A parent or guardian can ask the coach at any time to see or delete the player's data.</p>
+      </section>
+
+      <section className="space-y-2">
+        <h2>Accounts without a coach</h2>
+        <p className="text-sm">People aged 18 or over can create their own account for personal use. Only that person can see their videos and scores. We limit new clips to 5 per day on these accounts.</p>
       </section>
 
       <section className="space-y-2">
         <h2>Deleting data</h2>
-        <p className="text-sm">A coach can permanently delete a student. That removes the student&apos;s record, videos and video files, scores, notes and consent record. To ask for deletion, contact your coach.</p>
+        <p className="text-sm">A coach can permanently delete a student. That removes the student&apos;s record, videos and video files, scores, notes and consent record. To ask for deletion, contact your coach. If you signed up on your own, you can delete all your data yourself from your home page, using &ldquo;Delete my data&rdquo;.</p>
       </section>
 
       <section className="space-y-2">
