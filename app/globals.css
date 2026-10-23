@@ -83,13 +83,14 @@ h2 {
   color: var(--muted);
 }
 
-/* Big dotted numbers: use ONLY on big scores and tile numbers. */
+/* Big numbers (scores, tiles): plain and easy to read. The dotted Doto font is still loaded; to bring it back, set font-family to var(--font-doto). */
 .dot,
 .font-display {
-  font-family: var(--font-doto), "DotGothic16", ui-monospace, monospace;
-  font-weight: 800;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.03em;
 }
 
 /* Colourful tiles */
