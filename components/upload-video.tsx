@@ -1,5 +1,6 @@
 "use client";
 
+import { FilmingGuide } from "@/components/filming-guide";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,7 @@ export function UploadVideo({ athleteId, folderOwnerId, uploaderId, afterUpload 
   const uploading = progress !== null;
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      <FilmingGuide />
       <Field label="Batting clip" hint={`MP4/MOV, up to ${MAX_VIDEO_BYTES / 1048576} MB and ${MAX_VIDEO_SECONDS}s. Filmed side-on, phone held steady.`}>
         <Input type="file" accept="video/*" disabled={uploading} onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
       </Field>

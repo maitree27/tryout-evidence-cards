@@ -28,8 +28,18 @@ export function SkeletonVideo({ src, keypointsUrl }: { src: string; keypointsUrl
       v.currentTime = Math.max(0, Math.min(t, v.duration || t));
       v.scrollIntoView({ behavior: "smooth", block: "center" });
     };
+    // "Play both" on the compare page: every video on the page plays, pauses or restarts together.
+    const onSync = (e: Event) => {
+      const v = videoRef.current;
+      const a = (e as CustomEvent<{ action: string }>).detail?.action;
+      if (!v) return;
+      if (a === "restart") { v.currentTime = 0; v.play().catch(() => {}); }
+      else if (a === "play") v.play().catch(() => {});
+      else if (a === "pause") v.pause();
+    };
     window.addEventListener("willow-seek", onSeek);
-    return () => window.removeEventListener("willow-seek", onSeek);
+    window.addEventListener("willow-sync", onSync);
+    return () => { window.removeEventListener("willow-seek", onSeek); window.removeEventListener("willow-sync", onSync); };
   }, []);
 
   useEffect(() => {

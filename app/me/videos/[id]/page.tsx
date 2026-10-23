@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SeekChip } from "@/components/seek-chip";
 import { notFound } from "next/navigation";
 import { AnalyzeVideo } from "@/components/analyze-video";
 import { BigNumber } from "@/components/aura/parts";
@@ -24,7 +25,7 @@ export default async function StudentVideo({ params }: { params: Promise<{ id: s
   const [{ data: analysis }, { data: overrideRows }, { data: notes }] = await Promise.all([
     supabase.from("analyses").select("*").eq("video_id", id).maybeSingle(),
     supabase.from("score_overrides").select("metric_key, coach_score").eq("video_id", id),
-    supabase.from("coach_notes").select("id, body, created_at").eq("video_id", id).order("created_at", { ascending: false }),
+    supabase.from("coach_notes").select("id, body, created_at, at_s").eq("video_id", id).order("created_at", { ascending: false }),
   ]);
   const overrides = Object.fromEntries((overrideRows ?? []).map((r) => [r.metric_key, Number(r.coach_score)]));
   const metrics = (analysis?.metrics ?? []) as MetricResult[];
@@ -72,7 +73,7 @@ export default async function StudentVideo({ params }: { params: Promise<{ id: s
 
   const coachTab = (notes ?? []).length > 0 ? (
     <ul className="flex flex-col gap-2 text-sm">
-      {notes!.map((n) => <li key={n.id} className="glass border-l-4 border-l-accent p-4">{n.body}</li>)}
+      {notes!.map((n) => <li key={n.id} className="glass border-l-4 border-l-accent p-4">{n.at_s !== null && n.at_s !== undefined && <SeekChip t={Number(n.at_s)} />}<p>{n.body}</p></li>)}
     </ul>
   ) : (
     <Card className="text-sm text-muted">Your coach hasn&apos;t shared a note on this clip yet.</Card>
@@ -97,6 +98,8 @@ export default async function StudentVideo({ params }: { params: Promise<{ id: s
           note="An automatic estimate from video. Your coach has the final say."
         />
       )}
+
+      {analysis && <Link href={`/me/compare?b=${id}`} className="text-sm underline">Compare with another clip</Link>}
 
       <Tabs
         tabs={[

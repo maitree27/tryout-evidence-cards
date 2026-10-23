@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { MomentNoteForm } from "@/components/moment-note-form";
+import { SeekChip } from "@/components/seek-chip";
 import { notFound } from "next/navigation";
 import { addNote, deleteNote, setNoteVisible, setReviewed } from "@/app/actions/review";
 import { AnalyzeVideo } from "@/components/analyze-video";
@@ -28,7 +30,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   const [{ data: analysis }, { data: overrideRows }, { data: notes }] = await Promise.all([
     supabase.from("analyses").select("*").eq("video_id", id).maybeSingle(),
     supabase.from("score_overrides").select("metric_key, coach_score").eq("video_id", id),
-    supabase.from("coach_notes").select("id, body, created_at, visible_to_athlete").eq("video_id", id).order("created_at", { ascending: false }),
+    supabase.from("coach_notes").select("id, body, created_at, visible_to_athlete, at_s").eq("video_id", id).order("created_at", { ascending: false }),
   ]);
   // The saved body positions sit next to the video in the same private bucket.
   const keypointsPath = video.storage_path?.replace(/\.[^./]+$/, ".keypoints.json");
@@ -71,15 +73,13 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   const notesTab = (
     <>
       <Card>
-        <form action={addNote.bind(null, video.athletes.id, id)} className="space-y-2">
-          <Textarea name="body" required placeholder="What did you notice? What should they work on?" />
-          <Button type="submit" variant="outline">Add note</Button>
-        </form>
+        <MomentNoteForm action={addNote.bind(null, video.athletes.id, id)} />
       </Card>
       <ul className="flex flex-col gap-2">
         {(notes ?? []).map((n) => (
           <li key={n.id} className="glass flex items-start justify-between gap-3 p-4 text-sm">
             <div>
+              {n.at_s !== null && n.at_s !== undefined && <SeekChip t={Number(n.at_s)} />}
               <p>{n.body}</p>
               <p className="mt-1 text-xs text-muted">{new Date(n.created_at).toLocaleDateString()}</p>
             </div>
@@ -131,6 +131,8 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
           </form>
         </>
       )}
+
+      {analysis && <Link href={`/athletes/${video.athlete_id}/compare?b=${id}`} className="text-sm underline">Compare with another clip</Link>}
 
       <Tabs
         tabs={[

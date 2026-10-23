@@ -40,6 +40,15 @@ export default async function StudentHomePage() {
       streakWeeks={p.streakWeeks}
       strongest={strongest ? { key: strongest.key, label: strongest.label, value: strongest.latest } : null}
       focus={focus ? { key: focus.key, label: focus.label, value: focus.latest } : null}
+      nudge={
+        p.streakAlive
+          ? null
+          : (videos ?? []).length === 0
+            ? "Film your first clip to get your score. Tap to see how."
+            : p.streakWeeks > 0
+              ? `No clip yet this week. Upload one to keep your ${p.streakWeeks}-week streak.`
+              : "No clip yet this week. Upload one to start a new streak."
+      }
       feedback={feedbackSummary(feedbackRaw)}
       week={p.calendar.slice(49, 56).map((c, i) => ({ letter: "MTWTFSS"[i], on: c.uploaded, today: c.today }))}
     />

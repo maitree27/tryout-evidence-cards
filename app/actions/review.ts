@@ -47,7 +47,9 @@ export async function addNote(athleteId: string, videoId: string | null, formDat
   const body = String(formData.get("body") ?? "").trim().slice(0, 2000);
   if (!user || !body) return;
   const supabase = await createClient();
-  await supabase.from("coach_notes").insert({ athlete_id: athleteId, video_id: videoId, author_id: user.id, body });
+  const at = Number(formData.get("at_s"));
+  const atS = formData.get("at_s") !== "" && Number.isFinite(at) && at >= 0 && at <= 600 ? at : null;
+  await supabase.from("coach_notes").insert({ athlete_id: athleteId, video_id: videoId, author_id: user.id, body, ...(atS !== null ? { at_s: atS } : {}) });
   revalidatePath(`/athletes/${athleteId}`);
   if (videoId) revalidatePath(`/videos/${videoId}`);
 }

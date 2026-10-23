@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { BigNumber, Sparkline, Tile } from "@/components/aura/parts";
 
@@ -12,6 +13,7 @@ export type StudentHomeProps = {
   focus: { key: string; label: string; value: number } | null;
   feedback: string | null;
   week: { letter: string; on: boolean; today: boolean }[];
+  nudge?: string | null;
   more?: ReactNode;
 };
 
@@ -33,6 +35,13 @@ export function StudentHome(p: StudentHomeProps) {
           ))}
         </div>
       </div>
+
+      {p.nudge && (
+        <Link href="/me/upload" className="glass flex items-center justify-between gap-3 border-l-4 border-l-accent px-4 py-3 text-[15px]">
+          <span>{p.nudge}</span>
+          <span aria-hidden="true" className="text-lg">→</span>
+        </Link>
+      )}
 
       <BigNumber
         size="text-[5rem]"
