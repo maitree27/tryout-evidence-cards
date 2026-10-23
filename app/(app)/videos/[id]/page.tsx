@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { addNote, deleteNote, setNoteVisible, setReviewed } from "@/app/actions/review";
 import { AnalyzeVideo } from "@/components/analyze-video";
 import { BigNumber } from "@/components/aura/parts";
+import { DeepDive } from "@/components/aura/deep-dive";
 import { Tabs } from "@/components/aura/tabs";
 import { FeedbackText } from "@/components/feedback-text";
 import { ScoreEditor } from "@/components/score-editor";
@@ -10,6 +11,7 @@ import { SkeletonVideo } from "@/components/skeleton-video";
 import { Button } from "@/components/ui/button";
 import { Badge, Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/form";
+import { loadPreviousMetrics } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import type { MetricResult } from "@/sports/types";
 import { shotLabel } from "@/sports/cricket/shots";
@@ -37,6 +39,12 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   const warnings: string[] = analysis?.quality?.warnings ?? [];
   const finalScore = analysis?.coach_overall ?? analysis?.overall;
   const name = video.athletes.name;
+  const previous = analysis ? await loadPreviousMetrics(supabase, video.athlete_id, id, video.taken_on) : null;
+  const movesTab = analysis ? (
+    <DeepDive metrics={metrics} overrides={overrides} previous={previous} events={analysis.quality?.events ?? null} duration={video.duration_s ? Number(video.duration_s) : null} />
+  ) : (
+    <Card className="text-sm text-muted">Analyse the video to break the shot into moves.</Card>
+  );
 
   const scoresTab = analysis ? (
     <>
@@ -127,6 +135,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
       <Tabs
         tabs={[
           { key: "scores", label: "Scores", content: scoresTab },
+          { key: "moves", label: "Moves", content: movesTab },
           { key: "feedback", label: "Feedback", content: feedbackTab },
           { key: "notes", label: `Notes${(notes ?? []).length ? ` (${notes!.length})` : ""}`, content: notesTab },
         ]}

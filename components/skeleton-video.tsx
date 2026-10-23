@@ -18,6 +18,20 @@ export function SkeletonVideo({ src, keypointsUrl }: { src: string; keypointsUrl
   const [data, setData] = useState<Keypoints | null>(null);
   const [show, setShow] = useState(true);
 
+  // Other parts of the page can ask the video to jump to a moment (the "Moves" tab does this).
+  useEffect(() => {
+    const onSeek = (e: Event) => {
+      const v = videoRef.current;
+      const t = (e as CustomEvent<{ t: number }>).detail?.t;
+      if (!v || typeof t !== "number") return;
+      v.pause();
+      v.currentTime = Math.max(0, Math.min(t, v.duration || t));
+      v.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+    window.addEventListener("willow-seek", onSeek);
+    return () => window.removeEventListener("willow-seek", onSeek);
+  }, []);
+
   useEffect(() => {
     if (!keypointsUrl) return;
     let cancelled = false;

@@ -36,3 +36,20 @@ export async function loadProgress(supabase: SupabaseClient, athleteId?: string)
   }
   return out;
 }
+
+/** The metrics of the student's previous analysed clip before `takenOn` (for "change since last clip"). */
+export async function loadPreviousMetrics(supabase: SupabaseClient, athleteId: string, videoId: string, takenOn: string) {
+  const { data } = await supabase
+    .from("videos")
+    .select("id, taken_on, analyses(metrics)")
+    .eq("athlete_id", athleteId)
+    .eq("status", "analyzed")
+    .neq("id", videoId)
+    .lte("taken_on", takenOn)
+    .order("taken_on", { ascending: false })
+    .limit(1);
+  const row = data?.[0];
+  const a = (Array.isArray(row?.analyses) ? row?.analyses[0] : row?.analyses) as { metrics: MetricResult[] } | null | undefined;
+  if (!row || !a) return null;
+  return { date: row.taken_on as string, scores: Object.fromEntries(a.metrics.map((m) => [m.key, m.score])) as Record<string, number | null> };
+}

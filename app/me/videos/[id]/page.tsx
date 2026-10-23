@@ -2,10 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnalyzeVideo } from "@/components/analyze-video";
 import { BigNumber } from "@/components/aura/parts";
+import { DeepDive } from "@/components/aura/deep-dive";
 import { Tabs } from "@/components/aura/tabs";
 import { FeedbackText } from "@/components/feedback-text";
 import { SkeletonVideo } from "@/components/skeleton-video";
 import { Badge, Card } from "@/components/ui/card";
+import { loadPreviousMetrics } from "@/lib/data";
 import { effectiveScore } from "@/lib/progress";
 import { createClient } from "@/lib/supabase/server";
 import { shotLabel } from "@/sports/cricket/shots";
@@ -29,6 +31,12 @@ export default async function StudentVideo({ params }: { params: Promise<{ id: s
   const keypointsPath = video.storage_path?.replace(/\.[^./]+$/, ".keypoints.json");
   const keypointsUrl = analysis && keypointsPath ? (await supabase.storage.from("videos").createSignedUrl(keypointsPath, 3600)).data?.signedUrl ?? null : null;
   const warnings: string[] = analysis?.quality?.warnings ?? [];
+  const previous = analysis ? await loadPreviousMetrics(supabase, video.athlete_id, id, video.taken_on) : null;
+  const movesTab = analysis ? (
+    <DeepDive metrics={metrics} overrides={overrides} previous={previous} events={analysis.quality?.events ?? null} duration={video.duration_s ? Number(video.duration_s) : null} />
+  ) : (
+    <Card className="text-sm text-muted">Tap “Analyse this video” above to see your shot broken into moves.</Card>
+  );
 
   const scoresTab = analysis ? (
     <>
@@ -93,6 +101,7 @@ export default async function StudentVideo({ params }: { params: Promise<{ id: s
       <Tabs
         tabs={[
           { key: "scores", label: "Scores", content: scoresTab },
+          { key: "moves", label: "Moves", content: movesTab },
           { key: "feedback", label: "Feedback", content: feedbackTab },
           { key: "coach", label: "From coach", content: coachTab },
         ]}
