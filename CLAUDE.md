@@ -80,3 +80,5 @@ Deployed 2026-10-22 to https://hackathon-byob3.vercel.app (Vercel project `hacka
 
 ## In-depth analysis (pushed 2026-10-23)
 Moves tab on every clip (`components/aura/deep-dive.tsx`, move text and drills in `sports/cricket/phases.ts`): moment timeline (tap = video jumps via `willow-seek` event), 'Practise first', per-phase scores, change vs previous clip (`loadPreviousMetrics`). Student Clips tab has 'Analyse all' (`components/analyze-all.tsx`), runs waiting clips one by one in the browser. Moment timings only exist on clips analysed after this change.
+
+Also live 2026-10-23: how-to-film guide in the upload form (`components/filming-guide.tsx`), compare two clips (`components/compare-view.tsx`, routes `/me/compare`, `/athletes/[id]/compare`), coach notes pinned to a video moment (`coach_notes.at_s`, `supabase/moment-notes.sql` APPLIED to the real project), in-app 'no clip this week' nudge on student Home. Numbers use plain Inter (dotted Doto font still loaded, unused). Email/phone reminders NOT built (needs an email service key).
