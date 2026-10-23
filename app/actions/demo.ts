@@ -104,12 +104,12 @@ export async function loadDemoData() {
   if (a.error) return { error: a.error.message };
   await supabase.from("coach_notes").insert(notes);
 
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   return {};
 }
 
 export async function clearDemoData() {
   const supabase = await createClient();
   await supabase.from("athletes").delete().eq("notes", DEMO_TAG);
-  revalidatePath("/");
+  revalidatePath("/dashboard");
 }

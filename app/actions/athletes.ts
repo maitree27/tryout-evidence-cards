@@ -37,7 +37,7 @@ export async function createAthlete(_: FormState, formData: FormData): Promise<F
     .select("id")
     .single();
   if (error) return { error: error.message };
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   redirect(`/athletes/${data.id}`);
 }
 
@@ -51,14 +51,14 @@ export async function updateAthlete(id: string, _: FormState, formData: FormData
     .eq("id", id);
   if (error) return { error: error.message };
   revalidatePath(`/athletes/${id}`);
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   return undefined;
 }
 
 export async function setArchived(id: string, archived: boolean) {
   const supabase = await createClient();
   await supabase.from("athletes").update({ archived }).eq("id", id);
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath(`/athletes/${id}`);
 }
 
@@ -79,6 +79,6 @@ export async function deleteAthlete(id: string, _: FormState, formData: FormData
   }
   const { error } = await supabase.from("athletes").delete().eq("id", id);
   if (error) return { error: error.message };
-  revalidatePath("/");
-  redirect("/");
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }

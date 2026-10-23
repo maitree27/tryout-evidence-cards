@@ -31,7 +31,7 @@ export async function setOverride(videoId: string, metricKey: string, score: num
     await supabase.from("analyses").update({ coach_overall: coachOverall }).eq("video_id", videoId);
   }
   revalidatePath(`/videos/${videoId}`);
-  revalidatePath("/");
+  revalidatePath("/dashboard");
   return {};
 }
 
@@ -39,7 +39,7 @@ export async function setReviewed(videoId: string, reviewed: boolean) {
   const supabase = await createClient();
   await supabase.from("videos").update({ reviewed_at: reviewed ? new Date().toISOString() : null }).eq("id", videoId);
   revalidatePath(`/videos/${videoId}`);
-  revalidatePath("/");
+  revalidatePath("/dashboard");
 }
 
 export async function addNote(athleteId: string, videoId: string | null, formData: FormData) {

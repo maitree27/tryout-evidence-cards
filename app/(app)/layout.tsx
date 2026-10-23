@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen">
       <header className="bg-foreground text-background">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/" className="font-display text-3xl tracking-wide">WILLOW</Link>
+          <Link href="/dashboard" className="font-display text-3xl tracking-wide">WILLOW</Link>
           <nav className="flex items-center gap-2">
             <Link href="/athletes/new" className="px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider hover:bg-white/15">Add student</Link>
             <form action={logout}>

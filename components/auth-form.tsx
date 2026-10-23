@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/form";
 import { login, signup, type AuthState } from "@/app/actions/auth";
 
-export function AuthForm({ mode }: { mode: "login" | "signup" }) {
+export function AuthForm({ mode, hideSwitch = false }: { mode: "login" | "signup"; hideSwitch?: boolean }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(mode === "login" ? login : signup, undefined);
   return (
     <form action={action} className="space-y-4">
@@ -25,13 +25,13 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Please wait…" : mode === "login" ? "Log in" : "Create coach account"}
       </Button>
-      <p className="text-center text-sm text-muted">
+      {!hideSwitch && <p className="text-center text-sm text-muted">
         {mode === "login" ? (
           <>No account? <Link href="/signup" className="text-primary underline">Sign up</Link></>
         ) : (
           <>Have an account? <Link href="/login" className="text-primary underline">Log in</Link></>
         )}
-      </p>
+      </p>}
     </form>
   );
 }
