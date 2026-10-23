@@ -45,8 +45,8 @@ export function AnalyzeVideo({ videoId, videoUrl, hasAnalysis }: { videoId: stri
       </Button>
       {busy && (
         <div className="space-y-1">
-          <div className="h-2 overflow-hidden rounded-full bg-black/10">
-            <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+          <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
+            <div className="h-full bg-success transition-all" style={{ width: `${pct}%` }} />
           </div>
           <p className="text-xs text-muted">{stage}… keep this tab open (about 1 minute per 10 seconds of video)</p>
         </div>

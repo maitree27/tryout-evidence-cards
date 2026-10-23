@@ -23,13 +23,13 @@ export function StudentSignupForm({ mode, defaultName }: { mode: "signup" | "com
         </>
       )}
       {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-      {state?.notice && <p className="text-sm text-primary">{state.notice}</p>}
+      {state?.notice && <p className="text-sm text-success">{state.notice}</p>}
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Please wait…" : mode === "signup" ? "Create my account" : "Finish my profile"}
       </Button>
       {mode === "signup" && (
         <p className="text-center text-sm text-muted">
-          Already have an account? <Link href="/login?as=student" className="text-primary underline">Student log in</Link>
+          Already have an account? <Link href="/login?as=student" className="underline underline-offset-4">Student log in</Link>
         </p>
       )}
     </form>

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AuthShell } from "@/components/aura/auth-shell";
 import { NOTICE_VERSION } from "@/lib/consent";
 
 export const metadata = { title: "Privacy notice · Willow" };
@@ -6,10 +6,8 @@ export const metadata = { title: "Privacy notice · Willow" };
 // Plain-English draft. Have a lawyer check it for your country before real students use the app.
 export default function PrivacyPage() {
   return (
-    <main className="mx-auto max-w-2xl space-y-6 px-4 py-10">
-      <Link href="/login" className="text-sm text-primary underline">← Back</Link>
-      <h1 className="text-5xl leading-none">Privacy notice</h1>
-      <p className="font-mono text-xs text-muted">Version {NOTICE_VERSION}</p>
+    <AuthShell title="Privacy notice" subtitle={`Version ${NOTICE_VERSION}`} wide>
+      <div className="space-y-6">
 
       <section className="space-y-2">
         <h2>What Willow is</h2>
@@ -65,6 +63,7 @@ export default function PrivacyPage() {
         <h2>Limits you should know about</h2>
         <p className="text-sm">Scores are automatic estimates from video. They are not a coach&apos;s judgement and can be wrong. Willow is a prototype and should not be the only basis for training or selection decisions.</p>
       </section>
-    </main>
+      </div>
+    </AuthShell>
   );
 }

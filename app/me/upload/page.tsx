@@ -9,11 +9,11 @@ export default async function AthleteUpload() {
   const { data: athlete } = await supabase.from("athletes").select("id, coach_id").maybeSingle();
   if (!user || !athlete) redirect("/me");
   return (
-    <>
-      <h1 className="text-4xl">Upload a clip</h1>
+    <div className="mx-auto flex max-w-xl flex-col gap-4 px-5 pt-6">
+      <h1 className="text-3xl">Upload a clip</h1>
       <Card>
         <UploadVideo athleteId={athlete.id} folderOwnerId={athlete.coach_id ?? user.id} uploaderId={user.id} afterUpload="/me/videos" dailyLimit={athlete.coach_id ? undefined : 5} />
       </Card>
-    </>
+    </div>
   );
 }

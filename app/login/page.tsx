@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthShell } from "@/components/aura/auth-shell";
 import { AuthForm } from "@/components/auth-form";
 import { Card } from "@/components/ui/card";
 
@@ -7,28 +8,22 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const student = as === "student";
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 px-4">
-      <Link href="/" className="text-sm text-primary underline">← Back</Link>
-      <h1 className="text-4xl">{student ? "Student log in" : "Coach log in"}</h1>
-      <p className="text-sm text-muted">
-        {student
-          ? "Welcome back. Log in to see your scores, feedback and progress."
-          : "Willow: cricket batting analysis for coaches."}
-      </p>
-      <Card>
-        <AuthForm mode="login" hideSwitch={student} />
-      </Card>
+    <AuthShell
+      title={student ? "Student log in" : "Coach log in"}
+      subtitle={student ? "Welcome back. Log in to see your scores, feedback and progress." : "Welcome back, coach."}
+    >
+      <Card><AuthForm mode="login" hideSwitch={student} /></Card>
       {student ? (
         <p className="text-sm text-muted">
           New here? Open the invite link your coach sent you, or{" "}
-          <Link href="/signup/student" className="text-primary underline">create an account</Link> (18+) if you don&apos;t have a coach.{" "}
-          <Link href="/login" className="text-primary underline">I&apos;m a coach</Link>
+          <Link href="/signup/student" className="underline underline-offset-4">create an account</Link> (18+) if you don&apos;t have a coach.{" "}
+          <Link href="/login" className="underline underline-offset-4">I&apos;m a coach</Link>
         </p>
       ) : (
         <p className="text-sm text-muted">
-          Are you a student? <Link href="/login?as=student" className="text-primary underline">Student log in</Link>
+          Are you a student? <Link href="/login?as=student" className="underline underline-offset-4">Student log in</Link>
         </p>
       )}
-    </main>
+    </AuthShell>
   );
 }

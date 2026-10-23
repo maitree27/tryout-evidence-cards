@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getRole, getUser } from "@/lib/supabase/server";
 
 // Public front door. Logged-in people go straight to their own area.
@@ -12,49 +13,48 @@ export default async function Landing() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-5xl flex-col px-4 py-8">
-      <header className="flex items-center justify-between">
-        <span className="font-display text-4xl tracking-wide">WILLOW</span>
-        <Link href="/privacy" className="font-mono text-xs font-bold uppercase tracking-wider underline">Privacy</Link>
+    <div className="min-h-screen">
+      <header className="mx-auto flex max-w-xl items-center justify-between px-5 pt-5">
+        <span className="text-[17px] font-semibold tracking-tight">Willow</span>
+        <ThemeToggle />
       </header>
 
-      <section className="my-10 sm:my-16">
-        <h1 className="text-6xl leading-[0.95] sm:text-8xl">
-          Film.<br />
-          <span className="text-primary">Score.</span><br />
-          <span className="text-accent">Improve.</span>
-        </h1>
-        <p className="mt-6 max-w-xl text-lg">
-          Batting analysis for cricket. A coach films a clip, Willow scores the technique, and players watch their progress week by week.
-        </p>
-      </section>
+      <main className="mx-auto flex max-w-xl flex-col gap-8 px-5 pb-12 pt-10">
+        <section>
+          <p className="text-sm text-muted">Batting analysis for cricket</p>
+          <h1 className="mt-2 text-5xl leading-[1.05] sm:text-6xl">Film it.<br />Score it.<br />Improve it.</h1>
+          <p className="mt-4 max-w-md text-base text-muted">A coach films a clip, Willow scores the technique, and players watch their progress grow week by week.</p>
+        </section>
 
-      <section aria-label="Choose how to log in" className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col justify-between gap-6 bg-foreground p-6 text-background">
-          <div>
-            <p className="font-mono text-xs font-bold uppercase tracking-widest text-accent">For coaches</p>
-            <h2 className="mt-2" style={{ fontFamily: "var(--font-anton), Impact, sans-serif", fontSize: "2.5rem", lineHeight: 1, letterSpacing: "normal", textTransform: "none", fontWeight: 400 }}>I&apos;m a coach</h2>
-            <p className="mt-2 text-sm opacity-90">Manage your students, upload clips, review scores and see who needs your attention.</p>
+        <section aria-label="Choose how to log in" className="grid gap-3">
+          <div className="tile tile-blue flex flex-col gap-5 p-5">
+            <div>
+              <div className="text-sm opacity-90">For coaches</div>
+              <h2 className="mt-1 text-2xl font-semibold" style={{ color: "var(--tile-fg)", fontSize: "1.5rem", lineHeight: 1.2 }}>I&apos;m a coach</h2>
+              <p className="mt-1 text-sm opacity-90">Manage your students, review scores and see who needs you.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/login" className="inline-flex min-h-11 items-center rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground transition active:scale-95">Log in</Link>
+              <Link href="/signup" className="inline-flex min-h-11 items-center rounded-full border border-current px-6 text-sm font-medium transition active:scale-95">Create account</Link>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/login" className="inline-flex min-h-11 items-center bg-primary px-5 font-mono text-xs font-bold uppercase tracking-wider text-primary-foreground hover:bg-background hover:text-foreground">Coach log in</Link>
-            <Link href="/signup" className="inline-flex min-h-11 items-center border-2 border-background px-5 font-mono text-xs font-bold uppercase tracking-wider hover:bg-background hover:text-foreground">Create coach account</Link>
-          </div>
-        </div>
 
-        <div className="flex flex-col justify-between gap-6 border-2 border-border bg-card p-6">
-          <div>
-            <p className="font-mono text-xs font-bold uppercase tracking-widest text-primary">For players</p>
-            <h2 className="mt-2" style={{ fontFamily: "var(--font-anton), Impact, sans-serif", fontSize: "2.5rem", lineHeight: 1, letterSpacing: "normal", textTransform: "none", fontWeight: 400 }}>I&apos;m a student</h2>
-            <p className="mt-2 text-sm">See your scores and feedback, track your streak and personal bests. Got an invite from your coach? Open it to join. No coach? Create your own account (18+) for personal use.</p>
+          <div className="tile tile-pink flex flex-col gap-5 p-5">
+            <div>
+              <div className="text-sm opacity-90">For players</div>
+              <h2 className="mt-1 text-2xl font-semibold" style={{ color: "var(--tile-fg)", fontSize: "1.5rem", lineHeight: 1.2 }}>I&apos;m a student</h2>
+              <p className="mt-1 text-sm opacity-90">See your scores and feedback, and track your streak and personal bests.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/login?as=student" className="inline-flex min-h-11 items-center rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground transition active:scale-95">Log in</Link>
+              <Link href="/signup/student" className="inline-flex min-h-11 items-center rounded-full border border-current px-6 text-sm font-medium transition active:scale-95">Create account</Link>
+            </div>
+            <p className="text-xs opacity-90">Got an invite from your coach? Open that link. No coach? Create an account (18+).</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/login?as=student" className="inline-flex min-h-11 items-center bg-accent px-5 font-mono text-xs font-bold uppercase tracking-wider text-foreground hover:bg-foreground hover:text-background">Student log in</Link>
-            <Link href="/signup/student" className="inline-flex min-h-11 items-center border-2 border-border px-5 font-mono text-xs font-bold uppercase tracking-wider hover:bg-foreground hover:text-background">Create account</Link>
-          </div>
-          <p className="text-xs text-muted">Have a coach? Use the invite link they sent you. No invite? Create an account (18+). Already joined? Just log in.</p>
-        </div>
-      </section>
-    </main>
+        </section>
+
+        <footer className="text-center text-xs text-muted"><Link href="/privacy" className="underline underline-offset-4">Privacy</Link></footer>
+      </main>
+    </div>
   );
 }

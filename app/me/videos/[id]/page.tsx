@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnalyzeVideo } from "@/components/analyze-video";
+import { BigNumber } from "@/components/aura/parts";
+import { Tabs } from "@/components/aura/tabs";
 import { FeedbackText } from "@/components/feedback-text";
 import { SkeletonVideo } from "@/components/skeleton-video";
 import { Badge, Card } from "@/components/ui/card";
@@ -9,8 +11,8 @@ import { createClient } from "@/lib/supabase/server";
 import { shotLabel } from "@/sports/cricket/shots";
 import type { MetricResult } from "@/sports/types";
 
-// The athlete's view of one clip: read-only scores (coach adjustments win), feedback, and notes the coach chose to share.
-export default async function AthleteVideo({ params }: { params: Promise<{ id: string }> }) {
+// The student's view of one clip: read-only scores (coach adjustments win), feedback, and notes the coach chose to share.
+export default async function StudentVideo({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
   const { data: video } = await supabase.from("videos").select("*").eq("id", id).maybeSingle();
@@ -28,59 +30,73 @@ export default async function AthleteVideo({ params }: { params: Promise<{ id: s
   const keypointsUrl = analysis && keypointsPath ? (await supabase.storage.from("videos").createSignedUrl(keypointsPath, 3600)).data?.signedUrl ?? null : null;
   const warnings: string[] = analysis?.quality?.warnings ?? [];
 
-  return (
+  const scoresTab = analysis ? (
     <>
-      <Link href="/me" className="text-sm text-primary underline">← Your sessions</Link>
-      <h1 className="text-4xl">{shotLabel(video.shot_type)}</h1>
-      <div className="flex gap-2 text-sm text-muted"><span>{video.taken_on}</span><Badge>{video.status}</Badge></div>
+      {warnings.length > 0 && (
+        <Card className="text-sm text-warning">
+          <ul className="list-disc space-y-1 pl-5">{warnings.map((w) => <li key={w}>{w}</li>)}</ul>
+        </Card>
+      )}
+      <Card>
+        <ul className="space-y-4">
+          {metrics.map((m) => {
+            const score = effectiveScore(m, overrides);
+            return (
+              <li key={m.key}>
+                <div className="flex justify-between text-sm"><span className="font-medium">{m.label}</span><span>{score === null ? "not measured" : `${score}/100`}</span></div>
+                <div className="my-1 h-2 overflow-hidden rounded-full bg-foreground/10"><div className={overrides[m.key] !== undefined ? "h-full bg-warning" : "h-full bg-success"} style={{ width: `${score ?? 0}%` }} /></div>
+                <p className="text-xs text-muted">{m.detail}</p>
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
+    </>
+  ) : (
+    <Card className="text-sm text-muted">Tap “Analyse this video” above to get your scores and feedback.</Card>
+  );
+
+  const feedbackTab = analysis?.feedback ? (
+    <Card><FeedbackText text={analysis.feedback} /></Card>
+  ) : (
+    <Card className="text-sm text-muted">Feedback appears here after your clip is analysed.</Card>
+  );
+
+  const coachTab = (notes ?? []).length > 0 ? (
+    <ul className="flex flex-col gap-2 text-sm">
+      {notes!.map((n) => <li key={n.id} className="glass border-l-4 border-l-accent p-4">{n.body}</li>)}
+    </ul>
+  ) : (
+    <Card className="text-sm text-muted">Your coach hasn&apos;t shared a note on this clip yet.</Card>
+  );
+
+  return (
+    <div className="mx-auto flex max-w-xl flex-col gap-5 px-5 pt-6">
+      <Link href="/me/clips" className="text-sm text-muted hover:text-foreground">← Clips</Link>
+      <div>
+        <h1 className="text-3xl">{shotLabel(video.shot_type)}</h1>
+        <div className="mt-2 flex items-center gap-2 text-sm text-muted"><span>{video.taken_on}</span><Badge>{video.status}</Badge></div>
+      </div>
 
       {signed?.signedUrl && <SkeletonVideo src={signed.signedUrl} keypointsUrl={keypointsUrl} />}
       {signed?.signedUrl && <AnalyzeVideo videoId={id} videoUrl={signed.signedUrl} hasAnalysis={!!analysis} />}
 
       {analysis && (
-        <>
-          <Card className="flex items-center gap-4">
-            <div className="font-display text-6xl">{analysis.coach_overall ?? analysis.overall}</div>
-            <div className="text-sm">
-              <div className="font-medium">Overall score (0-100){analysis.coach_overall !== null && " · adjusted by your coach"}</div>
-              <div className="text-muted">An automatic estimate from video. Your coach has the final say.</div>
-            </div>
-          </Card>
-          {warnings.length > 0 && (
-            <Card className="border-warning text-sm text-warning">
-              <ul className="list-disc space-y-1 pl-5">{warnings.map((w) => <li key={w}>{w}</li>)}</ul>
-            </Card>
-          )}
-          <Card>
-            <h2 className="mb-3">Score breakdown</h2>
-            <ul className="space-y-3">
-              {metrics.map((m) => {
-                const score = effectiveScore(m, overrides);
-                return (
-                  <li key={m.key}>
-                    <div className="flex justify-between text-sm"><span className="font-medium">{m.label}</span><span>{score === null ? "not measured" : `${score}/100`}</span></div>
-                    <div className="my-1 h-2 bg-black/10"><div className={overrides[m.key] !== undefined ? "h-full bg-accent" : "h-full bg-primary"} style={{ width: `${score ?? 0}%` }} /></div>
-                    <p className="text-xs text-muted">{m.detail}</p>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-          {analysis.feedback && (
-            <Card>
-              <h2 className="mb-3">Feedback</h2>
-              <FeedbackText text={analysis.feedback} />
-            </Card>
-          )}
-        </>
+        <BigNumber
+          label={analysis.coach_overall !== null ? "Score, adjusted by your coach" : "Score"}
+          value={analysis.coach_overall ?? analysis.overall}
+          size="text-[5rem]"
+          note="An automatic estimate from video. Your coach has the final say."
+        />
       )}
 
-      {(notes ?? []).length > 0 && (
-        <Card>
-          <h2 className="mb-3">From your coach</h2>
-          <ul className="space-y-2 text-sm">{notes!.map((n) => <li key={n.id} className="border-l-4 border-accent bg-black/5 p-3">{n.body}</li>)}</ul>
-        </Card>
-      )}
-    </>
+      <Tabs
+        tabs={[
+          { key: "scores", label: "Scores", content: scoresTab },
+          { key: "feedback", label: "Feedback", content: feedbackTab },
+          { key: "coach", label: "From coach", content: coachTab },
+        ]}
+      />
+    </div>
   );
 }

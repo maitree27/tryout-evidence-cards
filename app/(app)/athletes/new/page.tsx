@@ -4,8 +4,8 @@ import { Card } from "@/components/ui/card";
 
 export default function NewAthletePage() {
   return (
-    <div className="mx-auto max-w-lg space-y-4">
-      <h1 className="text-4xl">Add a student</h1>
+    <div className="mx-auto flex max-w-xl flex-col gap-4 px-5 pt-6">
+      <h1 className="text-3xl">Add a student</h1>
       <Card>
         <AthleteForm action={createAthlete} submitLabel="Add student" />
       </Card>

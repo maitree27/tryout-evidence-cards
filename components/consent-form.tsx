@@ -11,7 +11,7 @@ export function ConsentForm({ studentName, isMinor }: { studentName: string; isM
   return (
     <form action={action} className="space-y-4">
       <fieldset className="space-y-2">
-        <legend className="mb-1 font-mono text-xs font-bold uppercase tracking-wider">Who is accepting?</legend>
+        <legend className="mb-1 text-sm font-medium">Who is accepting?</legend>
         <label className="flex items-start gap-2 text-sm">
           <input type="radio" name="role" value="parent_guardian" defaultChecked={isMinor} required className="mt-1" />
           <span>I am the parent or legal guardian of {studentName}</span>
@@ -27,7 +27,7 @@ export function ConsentForm({ studentName, isMinor }: { studentName: string; isM
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="agree" className="mt-1" />
         <span>
-          I have read the <Link href="/privacy" target="_blank" className="text-primary underline">privacy notice</Link> and agree to the videos, scores and notes for {studentName} being stored and processed as described.
+          I have read the <Link href="/privacy" target="_blank" className="underline underline-offset-4">privacy notice</Link> and agree to the videos, scores and notes for {studentName} being stored and processed as described.
         </span>
       </label>
       {state?.error && <p className="text-sm text-danger">{state.error}</p>}

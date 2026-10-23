@@ -7,7 +7,7 @@ export function CopyLink({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <input readOnly value={url} aria-label="Invite link" className="min-w-0 flex-1 border-2 border-border bg-card px-2 py-2 font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
+      <input readOnly value={url} aria-label="Invite link" className="min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2 text-xs" onFocus={(e) => e.currentTarget.select()} />
       <Button
         variant="outline"
         type="button"

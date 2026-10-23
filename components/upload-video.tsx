@@ -89,8 +89,8 @@ export function UploadVideo({ athleteId, folderOwnerId, uploaderId, afterUpload 
       </div>
       {uploading && (
         <div className="space-y-1">
-          <div className="h-2 overflow-hidden rounded-full bg-black/10">
-            <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+          <div className="h-2 overflow-hidden rounded-full bg-foreground/10">
+            <div className="h-full bg-success transition-all" style={{ width: `${progress}%` }} />
           </div>
           <p className="text-xs text-muted">Uploading… {progress}% (it resumes automatically if your signal drops)</p>
         </div>

@@ -27,9 +27,9 @@ export function AuthForm({ mode, hideSwitch = false }: { mode: "login" | "signup
       </Button>
       {!hideSwitch && <p className="text-center text-sm text-muted">
         {mode === "login" ? (
-          <>No account? <Link href="/signup" className="text-primary underline">Sign up</Link></>
+          <>No account? <Link href="/signup" className="underline underline-offset-4">Sign up</Link></>
         ) : (
-          <>Have an account? <Link href="/login" className="text-primary underline">Log in</Link></>
+          <>Have an account? <Link href="/login" className="underline underline-offset-4">Log in</Link></>
         )}
       </p>}
     </form>

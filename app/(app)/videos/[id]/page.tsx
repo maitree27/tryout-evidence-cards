@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addNote, deleteNote, setNoteVisible, setReviewed } from "@/app/actions/review";
 import { AnalyzeVideo } from "@/components/analyze-video";
+import { BigNumber } from "@/components/aura/parts";
+import { Tabs } from "@/components/aura/tabs";
 import { FeedbackText } from "@/components/feedback-text";
-import { SkeletonVideo } from "@/components/skeleton-video";
 import { ScoreEditor } from "@/components/score-editor";
+import { SkeletonVideo } from "@/components/skeleton-video";
 import { Button } from "@/components/ui/button";
 import { Badge, Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/form";
@@ -34,15 +36,68 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   const overrides = Object.fromEntries((overrideRows ?? []).map((r) => [r.metric_key, Number(r.coach_score)]));
   const warnings: string[] = analysis?.quality?.warnings ?? [];
   const finalScore = analysis?.coach_overall ?? analysis?.overall;
+  const name = video.athletes.name;
+
+  const scoresTab = analysis ? (
+    <>
+      {warnings.length > 0 && (
+        <Card className="text-sm text-warning">
+          <ul className="list-disc space-y-1 pl-5">{warnings.map((w) => <li key={w}>{w}</li>)}</ul>
+        </Card>
+      )}
+      <Card><ScoreEditor videoId={id} metrics={metrics} overrides={overrides} /></Card>
+    </>
+  ) : (
+    <Card className="text-sm text-muted">Tap “Analyse this video” above to get scores and feedback.</Card>
+  );
+
+  const feedbackTab = analysis?.feedback ? (
+    <Card>
+      <FeedbackText text={analysis.feedback} />
+      <p className="mt-3 text-xs text-muted">Written by {analysis.feedback_model} from the measurements in Scores.</p>
+    </Card>
+  ) : (
+    <Card className="text-sm text-muted">Feedback appears here after the video is analysed.</Card>
+  );
+
+  const notesTab = (
+    <>
+      <Card>
+        <form action={addNote.bind(null, video.athletes.id, id)} className="space-y-2">
+          <Textarea name="body" required placeholder="What did you notice? What should they work on?" />
+          <Button type="submit" variant="outline">Add note</Button>
+        </form>
+      </Card>
+      <ul className="flex flex-col gap-2">
+        {(notes ?? []).map((n) => (
+          <li key={n.id} className="glass flex items-start justify-between gap-3 p-4 text-sm">
+            <div>
+              <p>{n.body}</p>
+              <p className="mt-1 text-xs text-muted">{new Date(n.created_at).toLocaleDateString()}</p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <form action={setNoteVisible.bind(null, n.id, !n.visible_to_athlete, video.athletes.id, id)}>
+                <Button variant="outline" type="submit" className="min-h-8 px-3 text-xs">{n.visible_to_athlete ? "Shared · hide" : "Private · share"}</Button>
+              </form>
+              <form action={deleteNote.bind(null, n.id, video.athletes.id, id)}>
+                <Button variant="ghost" type="submit" className="min-h-8 px-3 text-xs">Delete</Button>
+              </form>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
 
   return (
-    <div className="space-y-4">
-      <Link href={`/athletes/${video.athletes.id}`} className="text-sm text-primary underline">← {video.athletes.name}</Link>
-      <h1 className="text-4xl">{shotLabel(video.shot_type)}</h1>
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-        <span>{video.taken_on}</span>
-        <Badge>{video.status}</Badge>
-        {video.reviewed_at ? <Badge tone="good">reviewed</Badge> : <Badge tone="warn">not reviewed</Badge>}
+    <div className="mx-auto flex max-w-xl flex-col gap-5 px-5 pt-6">
+      <Link href={`/athletes/${video.athletes.id}`} className="text-sm text-muted hover:text-foreground">← {name}</Link>
+      <div>
+        <h1 className="text-3xl">{shotLabel(video.shot_type)}</h1>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
+          <span>{video.taken_on}</span>
+          {video.reviewed_at ? <Badge tone="good">Reviewed</Badge> : analysis ? <Badge tone="warn">Not reviewed</Badge> : <Badge>{video.status}</Badge>}
+        </div>
       </div>
 
       {signed?.signedUrl ? (
@@ -55,64 +110,27 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
 
       {analysis && (
         <>
-          <Card className="flex items-center gap-4">
-            <div className="font-display text-6xl">{finalScore}</div>
-            <div className="text-sm">
-              <div className="font-medium">Overall score (0-100){analysis.coach_overall !== null && " · adjusted by you"}</div>
-              <div className="text-muted">
-                AI estimate: {analysis.overall}. Scoring rules are unvalidated heuristics, so the coach has the final say.
-              </div>
-            </div>
-          </Card>
-          {warnings.length > 0 && (
-            <Card className="border-warning text-sm text-warning">
-              <ul className="list-disc space-y-1 pl-5">{warnings.map((w) => <li key={w}>{w}</li>)}</ul>
-            </Card>
-          )}
-          <Card>
-            <h2 className="mb-3 font-medium">Score breakdown</h2>
-            <ScoreEditor videoId={id} metrics={metrics} overrides={overrides} />
-          </Card>
-          {analysis.feedback && (
-            <Card>
-              <h2 className="mb-3 font-medium">Coaching feedback</h2>
-              <FeedbackText text={analysis.feedback} />
-              <p className="mt-3 text-xs text-muted">Written by {analysis.feedback_model} from the measurements above.</p>
-            </Card>
-          )}
+          <BigNumber
+            label={analysis.coach_overall !== null ? "Score, adjusted by you" : "Score"}
+            value={finalScore}
+            size="text-[5rem]"
+            note={`AI estimate ${analysis.overall}. Automatic and unvalidated: you have the final say.`}
+          />
           <form action={setReviewed.bind(null, id, !video.reviewed_at)}>
-            <Button type="submit" variant={video.reviewed_at ? "outline" : "primary"}>
+            <Button type="submit" variant={video.reviewed_at ? "outline" : "primary"} className="w-full">
               {video.reviewed_at ? "Mark as not reviewed" : "Mark as reviewed"}
             </Button>
           </form>
         </>
       )}
 
-      <Card>
-        <h2 className="mb-3 font-medium">Your notes on this video</h2>
-        <form action={addNote.bind(null, video.athletes.id, id)} className="space-y-2">
-          <Textarea name="body" required placeholder="What did you notice? What should they work on?" />
-          <Button type="submit" variant="outline">Add note</Button>
-        </form>
-        <ul className="mt-4 space-y-2">
-          {(notes ?? []).map((n) => (
-            <li key={n.id} className="flex items-start justify-between gap-2 rounded-ui bg-black/5 p-3 text-sm">
-              <div>
-                <p>{n.body}</p>
-                <p className="mt-1 text-xs text-muted">{new Date(n.created_at).toLocaleDateString()}</p>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-1">
-                <form action={setNoteVisible.bind(null, n.id, !n.visible_to_athlete, video.athletes.id, id)}>
-                  <Button variant="outline" type="submit" className="min-h-8 px-2 text-xs">{n.visible_to_athlete ? "Shared · hide" : "Private · share"}</Button>
-                </form>
-                <form action={deleteNote.bind(null, n.id, video.athletes.id, id)}>
-                  <Button variant="ghost" type="submit" className="min-h-8 px-2 text-xs">Delete</Button>
-                </form>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </Card>
+      <Tabs
+        tabs={[
+          { key: "scores", label: "Scores", content: scoresTab },
+          { key: "feedback", label: "Feedback", content: feedbackTab },
+          { key: "notes", label: `Notes${(notes ?? []).length ? ` (${notes!.length})` : ""}`, content: notesTab },
+        ]}
+      />
     </div>
   );
 }

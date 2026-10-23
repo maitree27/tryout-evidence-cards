@@ -1,14 +1,11 @@
+import { AuthShell } from "@/components/aura/auth-shell";
 import { AuthForm } from "@/components/auth-form";
 import { Card } from "@/components/ui/card";
 
-export default function Page() {
+export default function SignupPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 px-4">
-      <h1 className="text-4xl">Create your coach account</h1>
-      <p className="text-sm text-muted">Willow: cricket batting analysis for coaches.</p>
-      <Card>
-        <AuthForm mode="signup" />
-      </Card>
-    </main>
+    <AuthShell title="Create your coach account" subtitle="Add your students, upload clips and see who needs you.">
+      <Card><AuthForm mode="signup" /></Card>
+    </AuthShell>
   );
 }

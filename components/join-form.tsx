@@ -32,9 +32,9 @@ export function JoinForm({ token, mode, defaultName }: { token: string; mode: "s
       {mode !== "accept" && (
         <p className="text-center text-sm text-muted">
           {mode === "signup" ? (
-            <>Already have an account? <Link href="?mode=login" className="text-primary underline">Log in</Link></>
+            <>Already have an account? <Link href="?mode=login" className="underline underline-offset-4">Log in</Link></>
           ) : (
-            <>New here? <Link href="?" className="text-primary underline">Create an account</Link></>
+            <>New here? <Link href="?" className="underline underline-offset-4">Create an account</Link></>
           )}
         </p>
       )}

@@ -41,15 +41,15 @@ export function ScoreEditor({ videoId, metrics, overrides }: { videoId: string; 
                     defaultValue={override ?? ""}
                     onChange={(e) => setDraft({ ...draft, [m.key]: e.target.value })}
                     onBlur={(e) => { if ((override?.toString() ?? "") !== e.target.value.trim()) save(m.key, e.target.value); }}
-                    className="w-24 rounded-ui border border-border px-2 py-1 text-right text-sm"
+                    className="w-24 rounded-lg border border-border bg-card px-2 py-1 text-right text-sm"
                   />
                   {override !== undefined && (
                     <Button variant="ghost" className="min-h-8 px-2 text-xs" onClick={() => save(m.key, "")} disabled={pending}>Reset</Button>
                   )}
                 </span>
               </div>
-              <div className="my-1 h-2 overflow-hidden rounded-full bg-black/10">
-                <div className={override !== undefined ? "h-full bg-warning" : "h-full bg-primary"} style={{ width: `${shown ?? 0}%` }} />
+              <div className="my-1 h-2 overflow-hidden rounded-full bg-foreground/10">
+                <div className={override !== undefined ? "h-full bg-warning" : "h-full bg-success"} style={{ width: `${shown ?? 0}%` }} />
               </div>
               <p className="text-xs text-muted">{m.detail}</p>
             </li>
@@ -57,7 +57,7 @@ export function ScoreEditor({ videoId, metrics, overrides }: { videoId: string; 
         })}
       </ul>
       {error && <p className="text-sm text-danger">{error}</p>}
-      <p className="text-xs text-muted">Orange bars are your own scores. They replace the AI score in the overall score and in the student's trends.</p>
+      <p className="text-xs text-muted">Amber bars are your own scores. They replace the AI score in the overall score and in the student's trends.</p>
     </div>
   );
 }

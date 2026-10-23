@@ -13,7 +13,7 @@ export function InviteAthlete({ athleteId }: { athleteId: string }) {
         <Input name="email" type="email" required autoComplete="off" />
       </Field>
       {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-      {state?.ok && <p className="text-sm text-primary">{state.ok}</p>}
+      {state?.ok && <p className="text-sm text-success">{state.ok}</p>}
       <Button type="submit" disabled={pending}>{pending ? "Creating…" : "Create invite link"}</Button>
     </form>
   );

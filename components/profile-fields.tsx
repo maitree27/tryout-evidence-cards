@@ -23,7 +23,7 @@ export function ProfileFields({ defaultName }: { defaultName?: string }) {
         <input type="checkbox" name="agree" className="mt-1" />
         <span>
           I am 18 or over, and I have read the{" "}
-          <Link href="/privacy" target="_blank" className="text-primary underline">privacy notice</Link> and agree to my videos and scores being stored as described.
+          <Link href="/privacy" target="_blank" className="underline underline-offset-4">privacy notice</Link> and agree to my videos and scores being stored as described.
         </span>
       </label>
     </>
