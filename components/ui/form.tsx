@@ -2,12 +2,12 @@ import { cn } from "@/lib/utils";
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes, ReactNode } from "react";
 
 const field =
-  "w-full rounded-ui border-2 border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary";
+  "w-full rounded-xl border border-border bg-card px-3.5 py-2.5 text-sm outline-none placeholder:text-muted focus:border-foreground focus:ring-1 focus:ring-foreground";
 
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
     <label className="block space-y-1">
-      <span className="font-mono text-xs font-bold uppercase tracking-wider">{label}</span>
+      <span className="text-sm font-medium">{label}</span>
       {children}
       {hint && <span className="block text-xs text-muted">{hint}</span>}
     </label>

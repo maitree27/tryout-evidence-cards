@@ -1,85 +1,47 @@
-import Link from "next/link";
-import { DeleteMyData } from "@/components/delete-my-data";
-import { Badge, Card } from "@/components/ui/card";
+import { StudentHome } from "@/components/aura/student-home";
+import { buildAthleteProgress } from "@/lib/athlete-progress";
+import { feedbackSummary } from "@/lib/feedback-summary";
 import { loadProgress } from "@/lib/data";
-import { summarize } from "@/lib/progress";
 import { createClient } from "@/lib/supabase/server";
-import { shotLabel } from "@/sports/cricket/shots";
 
-// Athlete home. Row-level security returns only this athlete's own record, videos and results.
-export default async function AthleteHome() {
+// Student home. Row-level security returns only this student's own record, clips and results.
+export default async function StudentHomePage() {
   const supabase = await createClient();
   const { data: athlete } = await supabase.from("athletes").select("id, name, coach_id").maybeSingle();
-
-  if (!athlete) {
-    return (
-      <>
-        <h1 className="text-4xl">Welcome</h1>
-        <Card className="text-sm">Your login isn&apos;t linked to a coach yet. Ask your coach to send you an invite link.</Card>
-      </>
-    );
-  }
+  if (!athlete) return null; // the layout shows the profile set-up screen in this case
 
   const [progress, { data: videos }] = await Promise.all([
     loadProgress(supabase, athlete.id),
-    supabase.from("videos").select("id, shot_type, taken_on, status").eq("athlete_id", athlete.id).order("taken_on", { ascending: false }).order("created_at", { ascending: false }),
+    supabase
+      .from("videos")
+      .select("id, shot_type, taken_on, status, analyses(feedback)")
+      .eq("athlete_id", athlete.id)
+      .order("taken_on", { ascending: false })
+      .order("created_at", { ascending: false }),
   ]);
-  const points = progress[athlete.id] ?? [];
-  const s = summarize(points);
-  const byVideo = new Map(points.map((p) => [p.videoId, p]));
+  const points = [...(progress[athlete.id] ?? [])].sort((a, b) => a.date.localeCompare(b.date));
+  const p = buildAthleteProgress(points);
+
+  const skills = p.skills.filter((s) => s.series.length > 0);
+  const strongest = skills.length ? skills.reduce((a, b) => (b.latest > a.latest ? b : a)) : null;
+  const focus = skills.length > 1 ? skills.reduce((a, b) => (b.latest < a.latest ? b : a)) : null;
+
+  const feedbackRaw = (videos ?? [])
+    .map((v) => (Array.isArray(v.analyses) ? v.analyses[0] : v.analyses) as { feedback: string | null } | null)
+    .find((a) => a?.feedback)?.feedback;
 
   return (
-    <>
-      <h1 className="text-5xl leading-none">Hi {athlete.name.split(" ")[0]}</h1>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          ["Latest", s.latest ?? "–"],
-          ["Change", s.change === null ? "–" : `${s.change > 0 ? "+" : ""}${s.change}`],
-          ["Personal best", s.best ?? "–"],
-          ["Clips", s.count],
-        ].map(([label, value]) => (
-          <Card key={label as string}>
-            <div className="text-xs text-muted">{label}</div>
-            <div className="font-display text-4xl">{value}</div>
-          </Card>
-        ))}
-      </div>
-      <Link href="/me/progress" className="mr-2 inline-flex min-h-11 items-center border-2 border-border px-5 font-mono text-xs font-bold uppercase tracking-wider hover:bg-foreground hover:text-background">
-        See my progress
-      </Link>
-      <Link href="/me/upload" className="inline-flex min-h-11 items-center bg-accent px-5 font-mono text-xs font-bold uppercase tracking-wider text-foreground hover:bg-foreground hover:text-background">
-        + Upload a clip
-      </Link>
-
-      <section className="space-y-2">
-        <h2>Your sessions</h2>
-        {(videos ?? []).length === 0 ? (
-          <Card className="text-sm text-muted">No clips yet. Film a short side-on batting clip and upload it.</Card>
-        ) : (
-          <ul className="space-y-2">
-            {videos!.map((v) => {
-              const p = byVideo.get(v.id);
-              return (
-                <li key={v.id}>
-                  <Link href={`/me/videos/${v.id}`}>
-                    <Card className="flex items-center justify-between gap-3 hover:border-primary">
-                      <span>{shotLabel(v.shot_type)} · {v.taken_on}</span>
-                      {p ? <span className="font-display text-3xl">{p.overall}</span> : <Badge>{v.status}</Badge>}
-                    </Card>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      {!athlete.coach_id && (
-        <Card className="max-w-lg border-danger">
-          <h2 className="mb-3">Delete my data</h2>
-          <DeleteMyData />
-        </Card>
-      )}
-    </>
+    <StudentHome
+      firstName={athlete.name.split(" ")[0]}
+      score={p.latest}
+      change={p.change}
+      series={points.map((pt) => pt.overall)}
+      best={p.pbs.find((b) => b.key === "overall")?.value ?? null}
+      streakWeeks={p.streakWeeks}
+      strongest={strongest ? { key: strongest.key, label: strongest.label, value: strongest.latest } : null}
+      focus={focus ? { key: focus.key, label: focus.label, value: focus.latest } : null}
+      feedback={feedbackSummary(feedbackRaw)}
+      week={p.calendar.slice(49, 56).map((c, i) => ({ letter: "MTWTFSS"[i], on: c.uploaded, today: c.today }))}
+    />
   );
 }

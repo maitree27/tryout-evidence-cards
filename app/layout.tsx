@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Archivo, Space_Mono } from "next/font/google";
-import { Ticker } from "@/components/ticker";
+import { Doto, Inter } from "next/font/google";
+import { Glow } from "@/components/glow";
 import "./globals.css";
 
-const anton = Anton({ weight: "400", subsets: ["latin"], variable: "--font-anton" });
-const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo" });
-const mono = Space_Mono({ weight: ["400", "700"], subsets: ["latin"], variable: "--font-mono" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const doto = Doto({ weight: ["400", "800"], subsets: ["latin"], variable: "--font-doto" });
 
 export const metadata: Metadata = {
   title: "Willow",
@@ -14,11 +13,17 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
+// Applies the saved light/dark choice before the page paints, so there is no flash.
+const themeScript = `try{var t=localStorage.getItem("willow-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${anton.variable} ${archivo.variable} ${mono.variable}`}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${inter.variable} ${doto.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-screen antialiased">
-        <Ticker />
+        <Glow />
         {children}
       </body>
     </html>

@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/signup"];
-const DEV_PUBLIC = process.env.NODE_ENV !== "production" ? ["/lab", "/api/dev/feedback"] : [];
+const DEV_PUBLIC = process.env.NODE_ENV !== "production" ? ["/lab", "/lab/student", "/api/dev/feedback"] : [];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

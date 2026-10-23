@@ -1,18 +1,53 @@
 @import "tailwindcss";
 
-/* Design tokens: change these to restyle the whole app. Current look: "Kinetic" (off-white, ink black, electric blue, hot orange). */
-:root {
-  --background: #f4f1ea;
-  --foreground: #0d0d0d;
-  --muted: #5c5a54;
-  --card: #fbf9f4;
-  --border: #0d0d0d;
-  --primary: #2f5bff;
+/* ===== Design tokens. Change these to restyle the whole app. Look: "Aura" (glowing, soft, one number per tile). =====
+   Dark is the default; [data-theme="light"] is the light switch. */
+:root,
+[data-theme="dark"] {
+  --background: #050506;
+  --foreground: #f4f2f7;
+  --muted: #b4afc0;
+  --card: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.13);
+  --primary: #f4f2f7;
+  --primary-foreground: #050506;
+  --accent: #ff6b8b;
+  --danger: #ff7b95;
+  --warning: #f6c453;
+  --success: #5be3b0;
+  --glow-1: rgba(244, 63, 142, 0.42);
+  --glow-2: rgba(56, 189, 160, 0.34);
+  --glow-3: rgba(124, 92, 255, 0.32);
+  --tile-fg: #ffffff;
+  --t-pink: linear-gradient(150deg, #e8588f, #7c3a6a);
+  --t-green: linear-gradient(150deg, #2f8f78, #1d4a52);
+  --t-blue: linear-gradient(150deg, #3b5bd9, #1e2a66);
+  --t-orange: linear-gradient(150deg, #e98a3d, #8a3a2a);
+  --t-violet: linear-gradient(150deg, #8a63d9, #3a2a6a);
+  --radius: 1.25rem;
+}
+
+[data-theme="light"] {
+  --background: #f7f5fb;
+  --foreground: #1b1824;
+  --muted: #5d5869;
+  --card: rgba(255, 255, 255, 0.78);
+  --border: rgba(27, 24, 36, 0.13);
+  --primary: #1b1824;
   --primary-foreground: #ffffff;
-  --accent: #ff5a1f;
-  --danger: #c2340a;
-  --warning: #9a4a07;
-  --radius: 0rem;
+  --accent: #c43d62;
+  --danger: #b4233f;
+  --warning: #8a5a00;
+  --success: #1f7a58;
+  --glow-1: rgba(244, 63, 142, 0.2);
+  --glow-2: rgba(56, 189, 160, 0.2);
+  --glow-3: rgba(124, 92, 255, 0.18);
+  --tile-fg: #1b1824;
+  --t-pink: linear-gradient(150deg, #ffd3e2, #f6a9c6);
+  --t-green: linear-gradient(150deg, #c9f1e2, #8fd8bf);
+  --t-blue: linear-gradient(150deg, #d3dcff, #a3b4f2);
+  --t-orange: linear-gradient(150deg, #ffe0c2, #f6b585);
+  --t-violet: linear-gradient(150deg, #e3d8ff, #bca6f2);
 }
 
 @theme inline {
@@ -26,44 +61,70 @@
   --color-accent: var(--accent);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
+  --color-success: var(--success);
   --radius-ui: var(--radius);
-  --font-sans: var(--font-archivo), system-ui, sans-serif;
-  --font-mono: var(--font-mono), ui-monospace, monospace;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-archivo), system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
 }
 
-/* Big headline type */
+/* Headings: calm sentence case. */
 h1 {
-  font-family: var(--font-anton), Impact, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  font-weight: 400;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
-/* Section labels */
 h2 {
-  font-family: var(--font-mono), ui-monospace, monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 0.8125rem;
-  font-weight: 700;
-}
-/* Use on big numbers (scores) */
-.font-display {
-  font-family: var(--font-anton), Impact, sans-serif;
-  font-weight: 400;
-  letter-spacing: 0.01em;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--muted);
 }
 
-@keyframes ticker {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+/* Big dotted numbers: use ONLY on big scores and tile numbers. */
+.dot,
+.font-display {
+  font-family: var(--font-doto), "DotGothic16", ui-monospace, monospace;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
 }
-.ticker-track { animation: ticker 40s linear infinite; }
+
+/* Colourful tiles */
+.tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.6rem;
+  padding: 0.9rem 1rem;
+  color: var(--tile-fg);
+  border: 1px solid var(--border);
+}
+.tile-pink { background: var(--t-pink); }
+.tile-green { background: var(--t-green); }
+.tile-blue { background: var(--t-blue); }
+.tile-orange { background: var(--t-orange); }
+.tile-violet { background: var(--t-violet); }
+
+/* Glass rows and cards */
+.glass {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+}
+
+/* Slow drifting glow behind everything (stops for people who prefer less motion) */
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(24px, -18px) scale(1.08); }
+}
+.glow-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  animation: drift 11s ease-in-out infinite;
+}
 @media (prefers-reduced-motion: reduce) {
-  .ticker-track { animation: none; }
+  .glow-orb { animation: none; }
 }

@@ -4,10 +4,10 @@ import type { ButtonHTMLAttributes } from "react";
 type Variant = "primary" | "outline" | "ghost" | "danger";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-primary text-primary-foreground hover:bg-foreground",
-  outline: "border-2 border-border bg-card hover:bg-foreground hover:text-background",
-  ghost: "hover:bg-black/5",
-  danger: "bg-danger text-white hover:bg-foreground",
+  primary: "bg-primary text-primary-foreground hover:opacity-90",
+  outline: "border border-border bg-card hover:opacity-80",
+  ghost: "hover:bg-card",
+  danger: "bg-danger text-background hover:opacity-90",
 };
 
 export function Button({
@@ -18,7 +18,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex min-h-11 items-center justify-center gap-2 rounded-ui px-4 font-mono text-xs font-bold uppercase tracking-wider transition disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
         variants[variant],
         className,
       )}
