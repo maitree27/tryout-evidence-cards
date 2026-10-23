@@ -117,8 +117,6 @@ select pg_temp.attempt('athlete: CAN upload file into own folder', 'allowed',
   $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000a1/10000000-0000-0000-0000-000000000001/t.mp4','00000000-0000-0000-0000-0000000000c1')$q$);
 select pg_temp.attempt('athlete: cannot upload into another student folder', 'blocked',
   $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000a1/10000000-0000-0000-0000-000000000002/t.mp4','00000000-0000-0000-0000-0000000000c1')$q$);
-select pg_temp.attempt('athlete with a coach: cannot delete files', 'blocked',
-  $q$delete from storage.objects where name = '00000000-0000-0000-0000-0000000000a1/10000000-0000-0000-0000-000000000001/own.mp4'$q$);
 select pg_temp.attempt('athlete: cannot upload into another coach folder', 'blocked',
   $q$insert into storage.objects (bucket_id, name, owner) values ('videos','00000000-0000-0000-0000-0000000000b1/10000000-0000-0000-0000-000000000001/t.mp4','00000000-0000-0000-0000-0000000000c1')$q$);
 
@@ -159,8 +157,9 @@ select pg_temp.count_as('solo: sees only own 5 clips', 5, 'select 1 from videos'
 select pg_temp.count_as('solo: sees only own file in storage', 1, 'select 1 from storage.objects');
 select pg_temp.attempt('solo: cannot accept a coach invite (already has a record)', 'blocked',
   $q$select accept_invite((select token from invites limit 1))$q$);
-select pg_temp.attempt('solo: CAN delete own file', 'allowed',
-  $q$delete from storage.objects where name = '00000000-0000-0000-0000-0000000000f1/10000000-0000-0000-0000-000000000005/t.mp4'$q$);
+-- (Supabase blocks direct file deletion from SQL, so we check the rule itself instead of deleting.)
+select pg_temp.count_as('rule exists: file delete is limited to students without a coach', 1,
+  $q$select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'videos_obj_athlete_delete' and qual like '%coach_id IS NULL%'$q$);
 select pg_temp.attempt('solo: CAN delete own record', 'allowed',
   $q$delete from athletes where id = '10000000-0000-0000-0000-000000000005'$q$);
 
